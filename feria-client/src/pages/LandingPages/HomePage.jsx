@@ -1,8 +1,8 @@
-import Button from '../components/Button';
-import Home from '../assets/images/home.jpg';
-import Image1 from '../assets/images/VGrid_02.jpg';
-import Image2 from '../assets/images/VGrid_03.png';
-import Image3 from '../assets/images/VGrid_05.jpg';
+import Button from '../../components/Button';
+import Home from '../../assets/images/home.jpg';
+import Image1 from '../../assets/images/VGrid_02.jpg';
+import Image2 from '../../assets/images/VGrid_03.png';
+import Image3 from '../../assets/images/VGrid_05.jpg';
 const HomePage = () => {
     return (
         <div className="flex w-full flex-col">
