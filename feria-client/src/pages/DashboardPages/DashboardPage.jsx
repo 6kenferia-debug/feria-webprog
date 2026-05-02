@@ -81,6 +81,15 @@ const averageAge = validAges.length > 0
 const maxAge = validAges.length > 0 ? Math.max(...validAges.map(row => row.age)) : 0;
 const minAge = validAges.length > 0 ? Math.min(...validAges.map(row => row.age)) : 0;
 
+// Age groups distribution for grid cards
+const ageGroups = validAges.reduce((acc, row) => {
+    if (row.age < 18) acc.child++;
+    else if (row.age < 35) acc.young++;
+    else if (row.age < 60) acc.middle++;
+    else acc.senior++;
+    return acc;
+}, { child: 0, young: 0, middle: 0, senior: 0 });
+
 const tealTheme = {
     primary: '#0d9488',
     primaryDark: '#0f766e',
@@ -145,9 +154,8 @@ const DashboardPage = () => {
                 >
                     Dashboard Overview
                 </Typography>
-                
-                <Grid container spacing={3} sx={{ mb: 4, justifyContent: 'center' }}>
-                    <Grid item xs={6} sm={6} md={3}>
+<Grid container spacing={3} sx={{ mb: 4, justifyContent: 'center' }}>
+                    <Grid item xs={6} md={3}>
                         <Card sx={summaryCardStyle}>
                             <CardContent>
                                 <Typography variant="h6" sx={{ color: tealTheme.textSecondary, fontWeight: 700, mb: 1 }}>
@@ -159,7 +167,7 @@ const DashboardPage = () => {
                             </CardContent>
                         </Card>
                     </Grid>
-                    <Grid item xs={6} sm={6} md={3}>
+                    <Grid item xs={6} md={3}>
                         <Card sx={summaryCardStyle}>
                             <CardContent>
                                 <Typography variant="h6" sx={{ color: tealTheme.textSecondary, fontWeight: 700, mb: 1 }}>
@@ -171,7 +179,7 @@ const DashboardPage = () => {
                             </CardContent>
                         </Card>
                     </Grid>
-                    <Grid item xs={6} sm={6} md={3}>
+                    <Grid item xs={6} md={3}>
                         <Card sx={summaryCardStyle}>
                             <CardContent>
                                 <Typography variant="h6" sx={{ color: tealTheme.textSecondary, fontWeight: 700, mb: 1 }}>
@@ -183,7 +191,7 @@ const DashboardPage = () => {
                             </CardContent>
                         </Card>
                     </Grid>
-                    <Grid item xs={6} sm={6} md={3}>
+                    <Grid item xs={6} md={3}>
                         <Card sx={summaryCardStyle}>
                             <CardContent>
                                 <Typography variant="h6" sx={{ color: tealTheme.textSecondary, fontWeight: 700, mb: 1 }}>
@@ -197,8 +205,71 @@ const DashboardPage = () => {
                     </Grid>
                 </Grid>
 
-                
-
+                <Typography variant="h5" sx={{ color: tealTheme.primaryDark, fontWeight: 800, mb: 2 }}>
+                    Age Group Breakdown
+                </Typography>
+<Grid container spacing={3} sx={{ mb: 4, justifyContent: 'center' }}>
+                    <Grid item xs={6} md={3}>
+                        <Card sx={summaryCardStyle}>
+                            <CardContent sx={{ textAlign: 'center' }}>
+                                <Typography variant="h6" sx={{ color: tealTheme.textSecondary, fontWeight: 700 }}>
+                                    Child Users
+                                </Typography>
+                                <Typography variant="body2" sx={{ color: tealTheme.textSecondary }}>
+                                    (Under 18)
+                                </Typography>
+                                <Typography variant="h3" sx={{ color: tealTheme.primaryDark, fontWeight: 800 }}>
+                                    {ageGroups.child}
+                                </Typography>
+                            </CardContent>
+                        </Card>
+                    </Grid>
+                    <Grid item xs={6} md={3}>
+                        <Card sx={summaryCardStyle}>
+                            <CardContent sx={{ textAlign: 'center' }}>
+                                <Typography variant="h6" sx={{ color: tealTheme.textSecondary, fontWeight: 700 }}>
+                                    Young Adults
+                                </Typography>
+                                <Typography variant="body2" sx={{ color: tealTheme.textSecondary }}>
+                                    (18-34)
+                                </Typography>
+                                <Typography variant="h3" sx={{ color: tealTheme.primaryDark, fontWeight: 800 }}>
+                                    {ageGroups.young}
+                                </Typography>
+                            </CardContent>
+                        </Card>
+                    </Grid>
+                    <Grid item xs={6} md={3}>
+                        <Card sx={summaryCardStyle}>
+                            <CardContent sx={{ textAlign: 'center' }}>
+                                <Typography variant="h6" sx={{ color: tealTheme.textSecondary, fontWeight: 700 }}>
+                                    Middle Age
+                                </Typography>
+                                <Typography variant="body2" sx={{ color: tealTheme.textSecondary }}>
+                                    (35-59)
+                                </Typography>
+                                <Typography variant="h3" sx={{ color: tealTheme.primaryDark, fontWeight: 800 }}>
+                                    {ageGroups.middle}
+                                </Typography>
+                            </CardContent>
+                        </Card>
+                    </Grid>
+                    <Grid item xs={6} md={3}>
+                        <Card sx={summaryCardStyle}>
+                            <CardContent sx={{ textAlign: 'center' }}>
+                                <Typography variant="h6" sx={{ color: tealTheme.textSecondary, fontWeight: 700 }}>
+                                    Senior Users
+                                </Typography>
+                                <Typography variant="body2" sx={{ color: tealTheme.textSecondary }}>
+                                    (60+)
+                                </Typography>
+                                <Typography variant="h3" sx={{ color: tealTheme.primaryDark, fontWeight: 800 }}>
+                                    {ageGroups.senior}
+                                </Typography>
+                            </CardContent>
+                        </Card>
+                    </Grid>
+                </Grid>
                 <Typography
                     variant="h5"
                     sx={{
