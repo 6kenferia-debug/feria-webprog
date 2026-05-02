@@ -72,14 +72,14 @@ const ReportsPage = () => {
     const isMd = useMediaQuery(theme.breakpoints.down('md'));
     const [barContainerWidth, setBarContainerWidth] = useState(840);
     const [lineContainerWidth, setLineContainerWidth] = useState(840);
-    const [pieContainerWidth, setPieContainerWidth] = useState(400);
+const [pieContainerWidth, setPieContainerWidth] = useState(300);
     const chartWrapperRef = useRef(null);
     const lineWrapperRef = useRef(null);
     const pieWrapperRef = useRef(null);
 
     const clampWidth = (width, min, max) => Math.max(min, Math.min(max, Math.floor(width)));
     const defaultBarWidth = isXs ? 320 : isMd ? 620 : 840;
-    const defaultPieWidth = isXs ? 320 : isMd ? 360 : 400;
+    const defaultPieWidth = isXs ? 240 : isMd ? 270 : 300;
 
     useEffect(() => {
         const updateSize = (node, setter, min, max) => {
@@ -236,11 +236,11 @@ yAxis={[
                     />
                 </Box>
                 
-                <Typography variant="h5" sx={{ color: tealTheme.primaryDark, fontWeight: 800, mb: 2 }}>
+<Typography variant="h5" sx={{ color: tealTheme.primaryDark, fontWeight: 800, mb: 2, textAlign: 'center' }}>
                     Age Groups Breakdown
                 </Typography>
                 
-                <Grid container spacing={3}>
+                <Grid container spacing={3} sx={{ justifyContent: 'center' }}>
                     <Grid item xs={12} md={6}>
                         <Box ref={pieWrapperRef} sx={{ ...sectionCardStyle, width: '100%', maxWidth: '100%', overflowX: 'hidden' }}>
                             <PieChart
