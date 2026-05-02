@@ -189,7 +189,7 @@ return (
                 <CssBaseline />
                 <AppBar position="fixed" open={open}>
                     <Toolbar sx={{ gap: 2 }}>
-<IconButton
+                        <IconButton
                             color="inherit"
                             aria-label={open ? "close drawer" : "open drawer"}
                             onClick={open ? handleDrawerClose : handleDrawerOpen}
@@ -285,7 +285,7 @@ return (
                     })}
                 </List>
                 </Drawer>
-<Box component="main" sx={{ flexGrow: 1, p: 2, minWidth: 0, overflowX: 'hidden' }}>
+                <Box component="main" sx={{ flexGrow: 1, p: 2, minWidth: 0, overflowX: 'hidden' }}>
                     <DrawerHeader />
                     {/* Content */}
                     <Outlet />

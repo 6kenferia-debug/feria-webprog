@@ -212,9 +212,11 @@ xAxis={[
                                 },
                             },
                         ]}
-                        yAxis={[
+yAxis={[
                             {
                                 label: 'Age',
+                                min: 0,
+                                max: 150,
                                 tickLabelStyle: {
                                     fill: tealTheme.textSecondary,
                                     fontWeight: 700,
