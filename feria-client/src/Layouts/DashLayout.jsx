@@ -285,7 +285,7 @@ return (
                     })}
                 </List>
                 </Drawer>
-                <Box component="main" sx={{ flexGrow: 1, p: 2, minWidth: 0, overflowX: 'hidden' }}>
+                <Box component="main" sx={{ flexGrow: 1, p: 0, minWidth: 0, overflowX: 'hidden' }}>
                     <DrawerHeader />
                     {/* Content */}
                     <Outlet />

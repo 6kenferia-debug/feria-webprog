@@ -1,5 +1,5 @@
 import './App.css';
-import Layout from './components/Layout';
+import Layout from './Layouts/Layout';
 import AboutPage from "./pages/LandingPages/AboutPage";
 import ArticleListPage from "./pages/LandingPages/ArticleListPage";
 import ArticlePage from "./pages/LandingPages/ArticlePage";
