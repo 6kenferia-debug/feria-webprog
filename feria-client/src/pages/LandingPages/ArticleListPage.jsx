@@ -3,6 +3,7 @@ import Button from '../../components/Button.jsx';
 import ArticleList from '../../components/ArticleList.jsx'; 
 import { useEffect, useState } from 'react';
 import { getArticles } from '../../services/ArticleService';
+import defaultArticles from '../../data/article-content';
 
 const ArticleListPage = () => {
     const [articles, setArticles] = useState([]);
@@ -11,10 +12,20 @@ const ArticleListPage = () => {
         (async () => {
             try {
                 const res = await getArticles();
-                setArticles(res?.articles ?? []);
+                const apiArticles = res?.articles ?? [];
+
+                const mergedArticles = apiArticles.map((apiArticle) => {
+                    const defaultArticle = defaultArticles.find((a) => a.slug === apiArticle.slug);
+                    return {
+                        ...apiArticle,
+                        image: apiArticle.image || defaultArticle?.image || Article,
+                    };
+                });
+
+                setArticles(mergedArticles.length > 0 ? mergedArticles : defaultArticles);
             } catch (e) {
                 console.error(e);
-                setArticles([]);
+                setArticles(defaultArticles);
             }
         })();
     }, []);
