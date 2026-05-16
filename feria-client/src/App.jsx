@@ -11,7 +11,7 @@ import NotFoundPage from './pages/NotFoundPage';
 import AuthLayout from './Layouts/AuthLayout';
 
 // Auth Pages
-import SignInPage from './pages/AuthPages/SignInPage';
+import LogInPage from './pages/AuthPages/LogInPage';
 import SignUpPage from './pages/AuthPages/SignUpPage';
 
 // Dashboard Layout & Pages
@@ -19,6 +19,7 @@ import DashLayout from './Layouts/DashLayout';
 import DashboardPage from './pages/DashboardPages/DashboardPage';
 import ReportsPage from './pages/DashboardPages/ReportsPage';
 import UsersPage from './pages/DashboardPages/UsersPage';
+import DashArticleListPage from './pages/DashboardPages/DashArticleListPage';
 
 const routes = [
 {
@@ -51,8 +52,8 @@ const routes = [
   element: <AuthLayout />,
   children: [
   {
-    path: 'signin',
-    element: <SignInPage />
+    path: 'login',
+    element: <LogInPage />
   },
   {
     path: 'signup',
@@ -62,27 +63,32 @@ const routes = [
 },
 
 // Dashboard Routes
-{
-  path: '/dashboard',
-  element: <DashLayout />,
-  errorElement: <NotFoundPage />,
-  children: [
   {
-    index: true,
-    element: <DashboardPage />
-  },
-  {
-    path: 'reports',
-    element: <ReportsPage />
-  },
-  {
-    path: 'users',
-    element: <UsersPage />
+    path: '/dashboard',
+    element: <DashLayout />,
+    errorElement: <NotFoundPage />,
+    children: [
+      {
+        index:true,
+        element: <DashboardPage />
+      },
+      {
+        path: 'reports',
+        element: <ReportsPage />
+      },
+      {
+        path: 'users',
+        element: <UsersPage />
+      },
+      {
+        path: 'articles',
+        element: <DashArticleListPage />
+      }
+    ]
   }
-  ]
-}
 
 ];
+
 
 const router = createBrowserRouter(routes);
 

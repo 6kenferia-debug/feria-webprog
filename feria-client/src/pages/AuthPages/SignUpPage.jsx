@@ -1,10 +1,13 @@
 //SIGN IN PAGE
-import { Link } from 'react-router-dom'; 
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom'; 
 import Button from '../../components/Button';
 import EmailLogo from '../../assets/images/email_logo.png';
 import PasswordLogo from '../../assets/images/password_logo.png';
 import GoogleLogo from '../../assets/images/google_logo.png';
 import AppleLogo from '../../assets/images/apple_logo.png';
+import { createUser } from '../../services/UserService';
+
 
 const inputNameClasses =
   'mt-2 w-full rounded-2xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 shadow-sm focus:border-[#35408E] focus:ring-2 focus:ring-[#35408E]/20';
@@ -18,7 +21,29 @@ const inputBorderClasses =
 const actionButtonClassName = 'w-full rounded-2xl py-3 text-[11px] tracking-[0.2em]';
 
 const SignUpPage = () => {
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    try {
+      // type defaults to editor so editors can access dashboard
+      await createUser({ firstName, lastName, email: email.toLowerCase(), password, type: 'editor' });
+      // After signup, go to login
+      navigate('/auth/login');
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Sign up failed');
+    }
+  };
+
   return (
+
     <div className="rounded-[2rem] border border-[#35408E]/15 bg-[#F7F6FF] p-8 shadow-[0_25px_80px_-40px_rgba(53,64,142,0.65)] sm:p-10">
       <h1 className="text-3xl font-bold tracking-tight text-[#35408E] sm:text-4xl">
         Create Account
@@ -27,7 +52,7 @@ const SignUpPage = () => {
         Create an account to unlock full access to articles, personalized content, and features designed to enhance your experience.
       </p>
 
-      <form className="mt-8 space-y-5">
+      <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
         <div className="grid gap-5 sm:grid-cols-2">
           <div>
             <label htmlFor="first-name" className="text-sm font-semibold text-[#35408E]">
@@ -38,6 +63,9 @@ const SignUpPage = () => {
               type="text"
               placeholder="First name"
               autoComplete="given-name"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              required
               className={inputNameClasses}
             />
           </div>
@@ -50,6 +78,9 @@ const SignUpPage = () => {
               type="text"
               placeholder="Last name"
               autoComplete="family-name"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              required
               className={inputNameClasses}
             />
           </div>
@@ -67,15 +98,20 @@ const SignUpPage = () => {
               type="email"
               placeholder="name@students.national-u.edu.ph"
               autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
               className={inputClasses}
             />
           </div>
         </div>
 
+
         <div>
           <label htmlFor="signin-password" className="text-sm font-semibold text-[#35408E]">
             Enter your password
           </label>
+
 
           <div className={inputBorderClasses}>
             <img src={PasswordLogo} alt="Password icon" className="h-5 w-5 opacity-70" />
@@ -84,6 +120,9 @@ const SignUpPage = () => {
               type="password"
               placeholder="Password"
               autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
               className={inputClasses}
             />
           </div>
@@ -123,7 +162,7 @@ const SignUpPage = () => {
       <div className="mt-8 border-t border-[#35408E]/15 pt-6 text-sm text-zinc-700">
         Already have an account?{' '}
         <Link
-          to="/auth/signin"
+to="/auth/login"
           className="font-semibold text-[#35408E] transition hover:text-[#2B3474]"
         >
           Log In

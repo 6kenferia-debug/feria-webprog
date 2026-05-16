@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     Alert,
     Box,
@@ -27,7 +27,7 @@ import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import SearchIcon from '@mui/icons-material/Search';
 import { DataGrid } from '@mui/x-data-grid';
-import usersSeed from '../../data/users.json?raw';
+import { fetchUsers, createUser, updateUser } from '../../services/UserService';
 
 const roles = ['admin', 'editor', 'viewer'];
 const genders = ['male', 'female', 'other'];
@@ -47,39 +47,6 @@ const blankForm = {
 };
 
 const labelize = (value) => (value ? `${value.charAt(0).toUpperCase()}${value.slice(1)}` : '');
-
-const loadUsers = () => {
-    try {
-        return {
-            users: JSON.parse(usersSeed).map((user, index) => ({
-                id: Number(user.id) || index + 1,
-                firstName: String(user.firstName ?? '').trim(),
-                lastName: String(user.lastName ?? '').trim(),
-                age: String(user.age ?? '').trim(),
-                gender: genders.includes(String(user.gender ?? '').trim().toLowerCase())
-                    ? String(user.gender ?? '').trim().toLowerCase()
-                    : '',
-                contactNumber: String(user.contactNumber ?? '').trim(),
-                email: String(user.email ?? '').trim().toLowerCase(),
-                role: roles.includes(String(user.role ?? '').trim().toLowerCase())
-                    ? String(user.role ?? '').trim().toLowerCase()
-                    : 'editor',
-                username: String(user.username ?? '').trim().toLowerCase(),
-                password: String(user.password ?? ''),
-                address: String(user.address ?? '').trim(),
-                isActive: typeof user.isActive === 'boolean' ? user.isActive : true,
-            })),
-            error: '',
-        };
-    } catch {
-        return {
-            users: [],
-            error: 'Unable to read users from src/assets/users.json.',
-        };
-    }
-};
-
-const seed = loadUsers();
 
 const UsersPage = () => {
     const theme = useTheme();
@@ -112,7 +79,9 @@ const UsersPage = () => {
         mb: 4,
     };
 
-    const [users, setUsers] = useState(seed.users);
+    const [users, setUsers] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
     const [modal, setModal] = useState({ open: false, id: null });
     const [form, setForm] = useState(blankForm);
     const [errors, setErrors] = useState({});
@@ -123,6 +92,42 @@ const UsersPage = () => {
     const [roleFilter, setRoleFilter] = useState(''); // '' => All
     const [genderFilter, setGenderFilter] = useState(''); // '' => All
     const [statusFilter, setStatusFilter] = useState(''); // '' => All, 'active'|'inactive'
+
+    // Load users from API on mount
+    useEffect(() => {
+        loadUsersFromAPI();
+    }, []);
+
+    const loadUsersFromAPI = async () => {
+        try {
+            setLoading(true);
+            const { data } = await fetchUsers();
+            const formattedUsers = (data.users ?? []).map((user) => ({
+                id: user._id || user.id,
+                firstName: String(user.firstName ?? '').trim(),
+                lastName: String(user.lastName ?? '').trim(),
+                age: String(user.age ?? '').trim(),
+                gender: genders.includes(String(user.gender ?? '').trim().toLowerCase())
+                    ? String(user.gender ?? '').trim().toLowerCase()
+                    : '',
+                contactNumber: String(user.contactNumber ?? '').trim(),
+                email: String(user.email ?? '').trim().toLowerCase(),
+                role: roles.includes(String(user.role ?? '').trim().toLowerCase())
+                    ? String(user.role ?? '').trim().toLowerCase()
+                    : 'editor',
+                username: String(user.username ?? '').trim().toLowerCase(),
+                address: String(user.address ?? '').trim(),
+                isActive: typeof user.isActive === 'boolean' ? user.isActive : true,
+            }));
+            setUsers(formattedUsers);
+            setError('');
+        } catch (err) {
+            console.error('Error fetching users:', err);
+            setError('Failed to load users. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const missingAges = users.filter((row) => String(row.age ?? '').trim() === '').length;
     const missingFirstNames = users.filter((row) => String(row.firstName ?? '').trim() === '').length;
@@ -204,7 +209,6 @@ const UsersPage = () => {
             ['email', 'Email'],
             ['role', 'Role'],
             ['username', 'Username'],
-            ['password', 'Password'],
             ['address', 'Address'],
         ].forEach(([key, label]) => {
             if (!String(form[key]).trim()) {
@@ -212,9 +216,14 @@ const UsersPage = () => {
             }
         });
 
+        // Password required only on create (new user)
+        if (!modal.id && !String(form.password ?? '').trim()) {
+            nextErrors.password = 'Password is required.';
+        }
+
         // 2) Easy custom validations
-        if (!nextErrors.password) {
-            if (password.length < 8) nextErrors.password = 'Password must be at least 8 characters.';
+        if (!nextErrors.password && form.password) {
+            if (String(form.password).length < 8) nextErrors.password = 'Password must be at least 8 characters.';
         }
 
         if (!nextErrors.contactNumber) {
@@ -247,7 +256,7 @@ const UsersPage = () => {
         return nextErrors;
     };
 
-    const handleSubmit = (event) => {
+    const handleSubmit = async (event) => {
         event.preventDefault();
 
         const nextErrors = validate();
@@ -263,35 +272,45 @@ const UsersPage = () => {
             gender: form.gender.trim().toLowerCase(),
             contactNumber: form.contactNumber.trim(),
             email: form.email.trim().toLowerCase(),
-            role: form.role.trim().toLowerCase(),
+            type: form.role.trim().toLowerCase(),
             username: form.username.trim().toLowerCase(),
-            password: form.password,
             address: form.address.trim(),
             isActive: form.isActive,
         };
 
-        setUsers((prev) => {
-            // ensure numeric id matching for edits
-            const currentId = modal.id != null ? Number(modal.id) : null;
+        // Only include password if provided
+        if (form.password) {
+            nextUser.password = form.password;
+        }
 
-            if (currentId) {
-                return prev.map((user) => (Number(user.id) === currentId ? { ...user, ...nextUser } : user));
+        try {
+            if (modal.id) {
+                // Update existing user
+                await updateUser(modal.id, nextUser);
+            } else {
+                // Create new user (password required)
+                await createUser({ ...nextUser, password: form.password });
             }
 
-            return [
-                ...prev,
-                {
-                    id: prev.reduce((max, user) => Math.max(max, Number(user.id) || 0), 0) + 1,
-                    ...nextUser,
-                },
-            ];
-        });
-
-        closeModal();
+            await loadUsersFromAPI();
+            closeModal();
+        } catch (err) {
+            console.error('Error saving user:', err);
+            setError('Failed to save user. Please try again.');
+        }
     };
 
-    const toggleStatus = (id) => {
-        setUsers((prev) => prev.map((user) => (user.id === id ? { ...user, isActive: user.isActive } : user)));
+    const toggleStatus = async (id) => {
+        try {
+            const user = users.find((u) => u.id === id);
+            if (!user) return;
+            
+            await updateUser(id, { isActive: !user.isActive });
+            await loadUsersFromAPI();
+        } catch (err) {
+            console.error('Error toggling user status:', err);
+            setError('Failed to update user status. Please try again.');
+        }
     };
 
     const fieldProps = (name, label, extra = {}) => ({
@@ -503,12 +522,14 @@ const UsersPage = () => {
                                             },
                                         },
                                     }}
-                                    InputProps={{
-                                        startAdornment: (
-                                            <InputAdornment position="start">
-                                                <SearchIcon sx={{ color: tealTheme.textSecondary }} />
-                                            </InputAdornment>
-                                        ),
+                                    slotProps={{
+                                        input: {
+                                            startAdornment: (
+                                                <InputAdornment position="start">
+                                                    <SearchIcon sx={{ color: tealTheme.textSecondary }} />
+                                                </InputAdornment>
+                                            ),
+                                        },
                                     }}
                                 />
 
@@ -604,14 +625,18 @@ const UsersPage = () => {
                         </TextField>
                     </Box>
 
-                    {seed.error ? (
+                    {error ? (
                         <Alert severity="error" sx={{ mb: 2 }}>
-                            {seed.error}
+                            {error}
                         </Alert>
                     ) : null}
 
                     <Paper sx={{ p: { xs: 1.5, sm: 2 }, minWidth: 0, overflow: 'hidden' }}>
-                        {users.length ? (
+                        {loading ? (
+                            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: { xs: 460, sm: 520 } }}>
+                                <Typography>Loading users...</Typography>
+                            </Box>
+                        ) : users.length ? (
                             <Box sx={{ height: { xs: 460, sm: 520 }, width: '100%', minWidth: 0 }}>
                                 <DataGrid
                                     rows={filteredRows}

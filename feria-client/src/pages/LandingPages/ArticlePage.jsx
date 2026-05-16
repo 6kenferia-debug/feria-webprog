@@ -1,12 +1,43 @@
-import { useParams } from 'react-router-dom'; 
+import { useParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import Button from '../../components/Button';
-import articles from '../../data/article-content.js'
+import { getArticles } from '../../services/ArticleService';
+import defaultArticles from '../../data/article-content';
+
 
 function ArticlePage() {
-    const {name} = useParams();
-    const article = articles.find(article => article.name === name);
-    
+    const { name } = useParams();
+    const [article, setArticle] = useState(null);
+
+    useEffect(() => {
+        (async () => {
+            try {
+                const res = await getArticles();
+                const list = res?.articles ?? [];
+                
+                // Merge with default articles to ensure images are available
+                const mergedArticles = list.map(apiArticle => {
+                    const defaultArticle = defaultArticles.find(a => a.slug === apiArticle.slug);
+                    return {
+                        ...apiArticle,
+                        image: apiArticle.image || defaultArticle?.image,
+                        content: apiArticle.content || defaultArticle?.content,
+                    };
+                });
+                
+                const found = (mergedArticles.length > 0 ? mergedArticles : defaultArticles).find((a) => a.slug === name);
+                setArticle(found ?? null);
+            } catch (e) {
+                console.error(e);
+                // Fallback to default articles if API fails
+                const found = defaultArticles.find((a) => a.slug === name);
+                setArticle(found ?? null);
+            }
+        })();
+    }, [name]);
+
     if (!article) {
+
         return (
             <div className="flex w-full flex-col">
                 <section className="bg-zinc-50 px-4 py-6 sm:px-6 sm:py-8 lg:px-8 border border-zinc-200/60">
@@ -33,7 +64,7 @@ function ArticlePage() {
                         {article.title}
                     </h1>
                     <p className="mt-2 text-sm text-zinc-500">
-                        {article.name.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                        {article.title}
                     </p>
                 </div>
             </section>
