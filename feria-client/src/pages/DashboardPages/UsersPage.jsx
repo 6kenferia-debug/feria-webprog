@@ -112,8 +112,9 @@ const UsersPage = () => {
                     : '',
                 contactNumber: String(user.contactNumber ?? '').trim(),
                 email: String(user.email ?? '').trim().toLowerCase(),
-                role: roles.includes(String(user.role ?? '').trim().toLowerCase())
-                    ? String(user.role ?? '').trim().toLowerCase()
+                // Backend stores it as `type`, UI/filters use `role`
+                role: roles.includes(String(user.role ?? user.type ?? '').trim().toLowerCase())
+                    ? String(user.role ?? user.type ?? '').trim().toLowerCase()
                     : 'editor',
                 username: String(user.username ?? '').trim().toLowerCase(),
                 address: String(user.address ?? '').trim(),
@@ -272,11 +273,16 @@ const UsersPage = () => {
             gender: form.gender.trim().toLowerCase(),
             contactNumber: form.contactNumber.trim(),
             email: form.email.trim().toLowerCase(),
+            // Backend expects `type`, and the UI uses `role`
             type: form.role.trim().toLowerCase(),
             username: form.username.trim().toLowerCase(),
             address: form.address.trim(),
             isActive: form.isActive,
         };
+
+        // Ensure displayed table role matches the selected form role.
+        // Backend returns `type` but we map it to `role` below in loadUsersFromAPI.
+
 
         // Only include password if provided
         if (form.password) {

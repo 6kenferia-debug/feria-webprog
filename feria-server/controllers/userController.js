@@ -73,6 +73,12 @@ const loginUser = async (req, res) => {
             return res.status(403).json({ message: 'Your account is inactive. Please contact support.' });
         }
 
+        // Block viewer role from logging in (requirement)
+        if (String(user.type || user.role || '').toLowerCase() === 'viewer') {
+            return res.status(403).json({ message: 'Viewer role cannot log in.' });
+        }
+
+
         // Compare the provided password with the hashed password
         const isPasswordValid = await bcrypt.compare(password, user.password);
         if (!isPasswordValid) {
