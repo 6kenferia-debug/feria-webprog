@@ -1,6 +1,6 @@
 //SIGN IN PAGE
 import { useState } from 'react';
-import { Link } from 'react-router-dom'; 
+import { Link, useNavigate } from 'react-router-dom'; 
 import Button from '../../components/Button';
 import EmailLogo from '../../assets/images/email_logo.png';
 import PasswordLogo from '../../assets/images/password_logo.png';
@@ -26,35 +26,19 @@ const SignUpPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setSuccess('');
 
     try {
-      // new signups should always be viewer accounts
-      await createUser({
-        firstName,
-        lastName,
-        age: '18',
-        gender: 'other',
-        contactNumber: '0000000000',
-        email: email.toLowerCase(),
-        type: 'viewer',
-        username: email.toLowerCase(),
-        address: 'N/A',
-        password,
-      });
-
-      setSuccess('Account created successfully! You may now log in.');
+      // type defaults to editor so editors can access dashboard
+      await createUser({ firstName, lastName, email: email.toLowerCase(), password, type: 'editor' });
+      // After signup, go to login
+      navigate('/auth/login');
     } catch (err) {
-      const rawMessage = err.response?.data?.message || err.message || 'Sign up failed';
-      const duplicateMessage = /duplicate key|E11000|already exists|duplicate/i.test(rawMessage)
-        ? 'An account already exists with this email or username.'
-        : rawMessage;
-      setError(duplicateMessage);
+      setError(err.response?.data?.message || err.message || 'Sign up failed');
     }
   };
 
@@ -69,16 +53,6 @@ const SignUpPage = () => {
       </p>
 
       <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
-        {success && (
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-            {success}
-          </div>
-        )}
-        {error && (
-          <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
-            {error}
-          </div>
-        )}
         <div className="grid gap-5 sm:grid-cols-2">
           <div>
             <label htmlFor="first-name" className="text-sm font-semibold text-[#35408E]">
