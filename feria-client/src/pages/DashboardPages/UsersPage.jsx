@@ -289,10 +289,6 @@ const UsersPage = () => {
             isActive: form.isActive,
         };
 
-        // Ensure displayed table role matches the selected form role.
-        // Backend returns `type` but we map it to `role` below in loadUsersFromAPI.
-
-
         // Only include password if provided
         if (form.password) {
             nextUser.password = form.password;
