@@ -42,6 +42,8 @@ app.use("/api/api/users", userRoutes);
 app.use("/api/api/users/", userRoutes);
 
 app.use("/api/articles", articleRoutes);
+// Compatibility: frontend may hit /articles directly
+app.use("/articles", articleRoutes);
 
 // (Optional) seed endpoint uses /api/articles/seed, so no extra route required.
 
