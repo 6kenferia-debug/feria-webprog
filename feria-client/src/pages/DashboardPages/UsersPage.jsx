@@ -125,6 +125,7 @@ const UsersPage = () => {
     const [statusFilter, setStatusFilter] = useState(''); // '' => All, 'active'|'inactive'
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     // Load users from API on mount
     useEffect(() => {
         loadUsersFromAPI();
@@ -162,6 +163,8 @@ const UsersPage = () => {
         }
     };
 
+=======
+>>>>>>> parent of a0217f7 (“lab-act7”)
 =======
 >>>>>>> parent of a0217f7 (“lab-act7”)
     const missingAges = users.filter((row) => String(row.age ?? '').trim() === '').length;
@@ -304,8 +307,12 @@ const UsersPage = () => {
             contactNumber: form.contactNumber.trim(),
             email: form.email.trim().toLowerCase(),
 <<<<<<< HEAD
+<<<<<<< HEAD
             // Backend expects `type`, and the UI uses `role`
             type: form.role.trim().toLowerCase(),
+=======
+            role: form.role.trim().toLowerCase(),
+>>>>>>> parent of a0217f7 (“lab-act7”)
 =======
             role: form.role.trim().toLowerCase(),
 >>>>>>> parent of a0217f7 (“lab-act7”)
@@ -316,6 +323,7 @@ const UsersPage = () => {
         };
 
 <<<<<<< HEAD
+<<<<<<< HEAD
         // Ensure displayed table role matches the selected form role.
         // Backend returns `type` but we map it to `role` below in loadUsersFromAPI.
 
@@ -324,6 +332,11 @@ const UsersPage = () => {
         if (form.password) {
             nextUser.password = form.password;
         }
+=======
+        setUsers((prev) => {
+            // ensure numeric id matching for edits
+            const currentId = modal.id != null ? Number(modal.id) : null;
+>>>>>>> parent of a0217f7 (“lab-act7”)
 =======
         setUsers((prev) => {
             // ensure numeric id matching for edits
