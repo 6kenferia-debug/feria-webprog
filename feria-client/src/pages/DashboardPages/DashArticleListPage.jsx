@@ -221,7 +221,6 @@ const DashArticleListPage = () => {
   };
 
   const toggleStatus = async (id) => {
-    // optimistic
     const target = articles.find((a) => a.id === id);
     if (!target) return;
 
@@ -229,18 +228,24 @@ const DashArticleListPage = () => {
     setArticles((prev) => prev.map((a) => (a.id === id ? { ...a, isActive: nextIsActive } : a)));
 
     try {
+      let savedArticle = null;
+
       if (target._id) {
-        await patchArticle(target._id, { isActive: nextIsActive });
+        const response = await patchArticle(target._id, { isActive: nextIsActive });
+        savedArticle = response?.article ?? response;
       } else {
         await upsertArticles([{ ...target, isActive: nextIsActive }]);
       }
 
-      const res = await getArticles();
-      const list = res?.articles ?? [];
-      setArticles(list.map((a, idx) => ({ ...a, id: idx + 1 })));
+      if (savedArticle) {
+        setArticles((prev) => prev.map((a) => (a.id === id ? { ...a, ...savedArticle, id: a.id } : a)));
+      } else {
+        const res = await getArticles();
+        const list = res?.articles ?? [];
+        setArticles(list.map((a, idx) => ({ ...a, id: idx + 1 })));
+      }
     } catch (e) {
       console.error(e);
-      // rollback
       setArticles((prev) => prev.map((a) => (a.id === id ? { ...a, isActive: !nextIsActive } : a)));
     }
   };
