@@ -22,7 +22,6 @@ import ListItemText from "@mui/material/ListItemText";
 import DashboardIcon from "@mui/icons-material/Dashboard"; 
 import PeopleIcon from "@mui/icons-material/People"; 
 import AssessmentIcon from "@mui/icons-material/Assessment"; 
-import ArticleIcon from "@mui/icons-material/Article";
 import Button from "@mui/material/Button";
 import MenuOpenIcon from "@mui/icons-material/MenuOpen";
 
@@ -45,12 +44,6 @@ const dashboardNavItems = [
         title: "Users",
         to: "/dashboard/users",
         icon: PeopleIcon,
-    },
-    {
-        label: "Articles",
-        title: "Articles",
-        to: "/dashboard/articles",
-        icon: ArticleIcon,
     },
 ];
 
@@ -171,38 +164,12 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
 const getPageTitle = (pathname) =>
     dashboardNavItems.find(({ to }) => to === pathname)?.title ?? "Welcome";
 
-const allowedNavItemsForRole = (role) => {
-    // editors can see Dashboard + Reports + Articles; viewers cannot access /dashboard
-    if (!role) return [];
-    const normalized = String(role).toLowerCase();
-
-    if (normalized === 'editor') {
-        return dashboardNavItems.filter((item) => item.to === '/dashboard' || item.to === '/dashboard/reports' || item.to === '/dashboard/articles');
-    }
-
-    if (normalized === 'viewer') {
-        return [];
-    }
-
-    // admin (fallback) can see everything
-    return dashboardNavItems;
-};
-
-
 const DashLayout = () => {
     const theme = useTheme();
     const [open, setOpen] = useState(true);
     const location = useLocation();
     const pageTitle = getPageTitle(location.pathname);
     const navigate = useNavigate();
-
-    const role = localStorage.getItem('type');
-    const visibleNavItems = allowedNavItemsForRole(role);
-
-    // viewers cannot access /dashboard at all
-    if (String(role).toLowerCase() === 'viewer') {
-        navigate('/', { replace: true });
-    }
     
     const handleDrawerOpen = () => {
         setOpen(true);
@@ -278,8 +245,7 @@ return (
                     )}
                 </Box>
                 <List>
-                    {visibleNavItems.map(({ label, to, icon: Icon }) => {
-
+                    {dashboardNavItems.map(({ label, to, icon: Icon }) => {
                         const selected = location.pathname === to;
                         return (
                             <ListItem key={to} disablePadding sx={{ display: 'block' }}>

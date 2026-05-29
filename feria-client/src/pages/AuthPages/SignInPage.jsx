@@ -6,9 +6,6 @@ import PasswordLogo from '../../assets/images/password_logo.png';
 import GoogleLogo from '../../assets/images/google_logo.png';
 import AppleLogo from '../../assets/images/apple_logo.png';
 
-const inputNameClasses =
-  'mt-2 w-full rounded-2xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 shadow-sm focus:border-[#35408E] focus:ring-2 focus:ring-[#35408E]/20';
-
 const inputClasses =
   'w-full rounded-2xl bg-white px-4 py-1 text-sm text-zinc-900 ';
 
@@ -17,44 +14,17 @@ const inputBorderClasses =
 
 const actionButtonClassName = 'w-full rounded-2xl py-3 text-[11px] tracking-[0.2em]';
 
-const SignUpPage = () => {
+const SignInPage = () => {
   return (
     <div className="rounded-[2rem] border border-[#35408E]/15 bg-[#F7F6FF] p-8 shadow-[0_25px_80px_-40px_rgba(53,64,142,0.65)] sm:p-10">
       <h1 className="text-3xl font-bold tracking-tight text-[#35408E] sm:text-4xl">
-        Create Account
+        Welcome back!
       </h1>
       <p className="mt-3 max-w-2xl text-sm leading-7 text-zinc-700">
-        Create an account to unlock full access to articles, personalized content, and features designed to enhance your experience.
+        Sign in to access your account and continue exploring articles, insights, and content designed to support your learning journey.
       </p>
 
       <form className="mt-8 space-y-5">
-        <div className="grid gap-5 sm:grid-cols-2">
-          <div>
-            <label htmlFor="first-name" className="text-sm font-semibold text-[#35408E]">
-              First Name
-            </label>
-            <input
-              id="first-name"
-              type="text"
-              placeholder="First name"
-              autoComplete="given-name"
-              className={inputNameClasses}
-            />
-          </div>
-          <div>
-            <label htmlFor="last-name" className="text-sm font-semibold text-[#35408E]">
-              Last Name
-            </label>
-            <input
-              id="last-name"
-              type="text"
-              placeholder="Last name"
-              autoComplete="family-name"
-              className={inputNameClasses}
-            />
-          </div>
-        </div>
-
         <div>
           <label htmlFor="signin-email" className="text-sm font-semibold text-[#35408E]">
             Email Address
@@ -92,12 +62,22 @@ const SignUpPage = () => {
           </p>
         </div>
 
+        <div className="flex items-center justify-between gap-4 text-sm">
+          <label className="flex items-center gap-2 text-zinc-700">
+            <input type="checkbox" className="h-4 w-4 rounded border-zinc-300 accent-[#35408E]" />
+            <span>Remember me</span>
+          </label>
+          <button type="button" className="font-semibold text-[#35408E] transition hover:text-[#2B3474]">
+            Forgot Password?
+          </button>
+        </div>
+
         <Button
           type="submit"
           variant="primary"
           className={`${actionButtonClassName} !border-0 !text-white bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 shadow-md hover:shadow-lg transition`}
         >
-          Create Account
+          Log In
         </Button>
 
         <div className="grid gap-3 pt-2 sm:grid-cols-2">
@@ -107,7 +87,7 @@ const SignUpPage = () => {
             className={`${actionButtonClassName} flex items-center justify-center gap-3 border-[#35408E] bg-white text-[#35408E] hover:border-[#FFDC56] hover:text-[#35408E]`}
           >
             <img src={GoogleLogo} alt="Google" className="h-5 w-5" />
-            <span>Sign Up with Google</span>
+            <span>Log In with Google</span>
           </Button>
           <Button
             type="button"
@@ -115,22 +95,22 @@ const SignUpPage = () => {
             className={`${actionButtonClassName} flex items-center justify-center gap-3 border-[#35408E] bg-white text-[#35408E] hover:border-[#FFDC56] hover:text-[#35408E]`}
           >
             <img src={AppleLogo} alt="Apple" className="h-5 w-5" />
-            <span>Sign Up with Apple</span>
+            <span>Log In with Apple</span>
           </Button>
         </div>
       </form>
 
       <div className="mt-8 border-t border-[#35408E]/15 pt-6 text-sm text-zinc-700">
-        Already have an account?{' '}
+        No account yet?{' '}
         <Link
-          to="/auth/signin"
+          to="/auth/signup"
           className="font-semibold text-[#35408E] transition hover:text-[#2B3474]"
         >
-          Log In
+          Sign Up
         </Link>
       </div>
     </div>
   );
 };
 
-export default SignUpPage;
+export default SignInPage;

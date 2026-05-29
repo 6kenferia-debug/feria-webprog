@@ -1,27 +1,9 @@
 import Article from '../../assets/images/article.png';
 import Button from '../../components/Button.jsx';
 import ArticleList from '../../components/ArticleList.jsx'; 
-import { useEffect, useState } from 'react';
-import { getArticles } from '../../services/ArticleService';
+import articles from '../../data/article-content.js';
 
 const ArticleListPage = () => {
-    const [articles, setArticles] = useState([]);
-
-    useEffect(() => {
-        (async () => {
-            try {
-                const res = await getArticles();
-                setArticles(res?.articles ?? []);
-            } catch (e) {
-                console.error(e);
-                setArticles([]);
-            }
-        })();
-    }, []);
-
-    const visibleArticles = articles.filter((article) => article.isActive);
-
-
     return (
         <div className="flex w-full flex-col">
             <section className="bg-zinc-50 px-4 py-6 sm:px-6 sm:py-8 lg:px-8 border border-zinc-200/60">
@@ -55,7 +37,7 @@ const ArticleListPage = () => {
                     <h2 className="mt-2 text-2xl font-semibold text-teal-900">Something About Me</h2>
                 </div>
                 
-                <ArticleList articles={visibleArticles} />
+                <ArticleList articles={articles} />
             </section>
         </div>
     );

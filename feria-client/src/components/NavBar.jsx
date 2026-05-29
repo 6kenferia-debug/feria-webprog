@@ -8,7 +8,7 @@ const links = [
 ];
 
 const authLinks = [
-    { label: 'Log In', to: '/auth/login' },
+    { label: 'Sign In', to: '/auth/signin' },
     { label: 'Sign Up', to: '/auth/signup' },
 ];
 
