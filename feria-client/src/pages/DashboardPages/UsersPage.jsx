@@ -27,7 +27,6 @@ import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import SearchIcon from '@mui/icons-material/Search';
 import { DataGrid } from '@mui/x-data-grid';
-import { useNavigate } from 'react-router-dom';
 import { fetchUsers, createUser, updateUser } from '../../services/UserService';
 
 const roles = ['admin', 'editor', 'viewer'];
@@ -93,14 +92,6 @@ const UsersPage = () => {
     const [roleFilter, setRoleFilter] = useState(''); // '' => All
     const [genderFilter, setGenderFilter] = useState(''); // '' => All
     const [statusFilter, setStatusFilter] = useState(''); // '' => All, 'active'|'inactive'
-    const navigate = useNavigate();
-    const role = localStorage.getItem('type');
-
-    useEffect(() => {
-        if (String(role || '').toLowerCase() === 'editor') {
-            navigate('/dashboard', { replace: true });
-        }
-    }, [navigate, role]);
 
     // Load users from API on mount
     useEffect(() => {

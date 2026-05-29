@@ -5,6 +5,7 @@ const router = express.Router();
 
 const Article = require('../models/Articles');
 
+// If someone hits this file directly we still seed
 router.post('/', async (req, res) => {
   try {
     const list = req.body?.articles ?? articlesSeed;
