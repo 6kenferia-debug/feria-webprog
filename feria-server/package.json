@@ -20,7 +20,7 @@
     "jsonwebtoken": "^9.0.3",
     "kerberos": "^7.0.0",
     "mongodb-client-encryption": "^7.0.0",
-    "mongoose": "^9.6.2"
+    "mongoose": "^9.6.3"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
