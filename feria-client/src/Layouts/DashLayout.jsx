@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom"; 
 import { styled, useTheme, alpha} from "@mui/material/styles";
 import Box from "@mui/material/Box";
@@ -172,12 +172,15 @@ const getPageTitle = (pathname) =>
     dashboardNavItems.find(({ to }) => to === pathname)?.title ?? "Welcome";
 
 const allowedNavItemsForRole = (role) => {
-    // editors can see Dashboard + Reports + Articles; viewers cannot access /dashboard
+    // editors cannot access UsersPage
+    // viewers cannot access /dashboard
     if (!role) return [];
     const normalized = String(role).toLowerCase();
 
     if (normalized === 'editor') {
-        return dashboardNavItems.filter((item) => item.to === '/dashboard' || item.to === '/dashboard/reports' || item.to === '/dashboard/articles');
+        return dashboardNavItems.filter(
+            (item) => item.to === '/dashboard' || item.to === '/dashboard/reports' || item.to === '/dashboard/articles',
+        );
     }
 
     if (normalized === 'viewer') {
@@ -187,6 +190,7 @@ const allowedNavItemsForRole = (role) => {
     // admin (fallback) can see everything
     return dashboardNavItems;
 };
+
 
 
 const DashLayout = () => {
@@ -199,11 +203,19 @@ const DashLayout = () => {
     const role = localStorage.getItem('type');
     const visibleNavItems = allowedNavItemsForRole(role);
 
-    // viewers cannot access /dashboard at all
-    if (String(role).toLowerCase() === 'viewer') {
-        navigate('/', { replace: true });
-    }
-    
+    useEffect(() => {
+        const normalizedRole = String(role || '').toLowerCase();
+
+        if (normalizedRole === 'viewer') {
+            navigate('/', { replace: true });
+            return;
+        }
+
+        if (normalizedRole === 'editor' && location.pathname === '/dashboard/users') {
+            navigate('/dashboard', { replace: true });
+        }
+    }, [navigate, role, location.pathname]);
+
     const handleDrawerOpen = () => {
         setOpen(true);
     };
