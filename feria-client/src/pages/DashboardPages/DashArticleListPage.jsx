@@ -31,6 +31,7 @@ const blankForm = {
 
   slug: '',
   title: '',
+  image: '',
   content: '',
   isFeatured: false,
   isActive: true,
@@ -42,6 +43,7 @@ const seed = {
     id: Number(article.id ?? index + 1),
     slug: article.slug || article.name || `article-${index + 1}`,
     title: article.title || `Article ${index + 1}`,
+    image: article.image ?? '',
     content: Array.isArray(article.content) ? article.content.join('\n\n') : String(article.content || ''),
     isFeatured: typeof article.isFeatured === 'boolean' ? article.isFeatured : false,
     isActive: typeof article.isActive === 'boolean' ? article.isActive : true,
@@ -185,7 +187,7 @@ const DashArticleListPage = () => {
       content: String(form.content).trim(),
       isFeatured: !!form.isFeatured,
       isActive: !!form.isActive,
-      image: form.image,
+      image: String(form.image || '').trim(),
     };
 
     try {
@@ -510,6 +512,7 @@ const DashArticleListPage = () => {
               <Stack spacing={2} sx={{ pt: 1 }}>
                 <TextField {...fieldProps('slug', 'Article link subdirectory')} />
                 <TextField {...fieldProps('title', 'Article Title')} />
+                <TextField {...fieldProps('image', 'Image URL')} />
                 <TextField
                   {...fieldProps('content', 'Content', {
                     multiline: true,

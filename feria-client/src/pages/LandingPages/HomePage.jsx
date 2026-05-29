@@ -12,28 +12,34 @@ const HomePage = () => {
             try {
                 const res = await getArticles();
                 const apiArticles = res?.articles ?? [];
-                
-                // Merge with default articles to ensure images are available
-                const mergedArticles = apiArticles.map(apiArticle => {
+
+                const mergedArticles = (apiArticles.length > 0 ? apiArticles : defaultArticles).map(apiArticle => {
                     const defaultArticle = defaultArticles.find(a => a.slug === apiArticle.slug);
+
+                    const normalizedContent = Array.isArray(apiArticle.content)
+                        ? apiArticle.content
+                        : typeof apiArticle.content === 'string'
+                            ? apiArticle.content.split(/\n\n|\n/).map((line) => line.trim()).filter(Boolean)
+                            : defaultArticle?.content ?? [];
+
                     return {
                         ...apiArticle,
-                        image: apiArticle.image || defaultArticle?.image,
-                        isFeatured: apiArticle.isFeatured !== undefined ? apiArticle.isFeatured : defaultArticle?.isFeatured,
-                        isActive: apiArticle.isActive !== undefined ? apiArticle.isActive : defaultArticle?.isActive,
+                        image: apiArticle.image || defaultArticle?.image || Home,
+                        content: normalizedContent,
+                        isFeatured: apiArticle.isFeatured !== undefined ? Boolean(apiArticle.isFeatured) : Boolean(defaultArticle?.isFeatured),
+                        isActive: apiArticle.isActive !== undefined ? Boolean(apiArticle.isActive) : Boolean(defaultArticle?.isActive),
                     };
                 });
-                
-                setArticles(mergedArticles.length > 0 ? mergedArticles : defaultArticles);
+
+                setArticles(mergedArticles);
             } catch (e) {
                 console.error(e);
-                // Fallback to default articles if API fails
                 setArticles(defaultArticles);
             }
         })();
     }, []);
 
-    const featuredArticles = articles.filter((article) => article.isFeatured && article.isActive);
+    const featuredArticles = articles.filter((article) => Boolean(article.isFeatured) && Boolean(article.isActive));
 
     return (
         <div className="flex w-full flex-col">
@@ -112,21 +118,34 @@ const HomePage = () => {
 
                 <div className="grid gap-4 md:grid-cols-3">
                     {featuredArticles.length ? (
-                        featuredArticles.map((article) => (
+                        featuredArticles.map((article) => {
+                            const preview = Array.isArray(article.content)
+                                ? article.content[0] || ''
+                                : String(article.content || '');
+
+                            return (
                             <article key={article.slug} className="flex flex-col rounded-3xl border-3 border-zinc-300/70 bg-white p-4 shadow-[0_20px_50px_rgba(15,23,42,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_26px_60px_rgba(15,23,42,0.12)]">
                                 <div>
-                                    <img src={article.image} className="flex aspect-4/3 items-center justify-center rounded-[1.25rem] bg-teal-200" />
+                                    <img
+                                        src={article.image || Home}
+                                        alt={article.title}
+                                        onError={(event) => {
+                                            event.currentTarget.src = Home;
+                                        }}
+                                        className="flex aspect-4/3 w-full items-center justify-center rounded-[1.25rem] bg-teal-200 object-cover"
+                                    />
                                 </div>
                                 <h3 className="mt-4 text-lg font-semibold text-black">{article.title}</h3>
 
                                 <p className="mt-3 text-sm leading-6 text-black">
-                                    {String(article.content || '').split('\n\n')[0].substring(0, 200)}...
+                                    {preview.substring(0, 200)}{preview.length > 200 ? '...' : ''}
                                 </p>
                                 <Button to={`/articles/${article.slug}`} className="mt-auto" variant="primary">
                                     Read Article
                                 </Button>
                             </article>
-                        ))
+                            );
+                        })
                     ) : (
                         <div className="rounded-3xl border-3 border-zinc-300/70 bg-white p-6 shadow-[0_20px_50px_rgba(15,23,42,0.08)]">
                             <h3 className="text-lg font-semibold text-black">No featured articles available</h3>

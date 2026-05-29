@@ -1,6 +1,7 @@
 import { useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import Button from '../../components/Button';
+import Home from '../../assets/images/home.jpg';
 import { getArticles } from '../../services/ArticleService';
 import defaultArticles from '../../data/article-content';
 
@@ -18,10 +19,17 @@ function ArticlePage() {
                 // Merge with default articles to ensure images are available
                 const mergedArticles = list.map(apiArticle => {
                     const defaultArticle = defaultArticles.find(a => a.slug === apiArticle.slug);
+
+                    const normalizedContent = Array.isArray(apiArticle.content)
+                        ? apiArticle.content
+                        : typeof apiArticle.content === 'string'
+                            ? apiArticle.content.split(/\n\n|\n/).map((line) => line.trim()).filter(Boolean)
+                            : defaultArticle?.content ?? [];
+
                     return {
                         ...apiArticle,
-                        image: apiArticle.image || defaultArticle?.image,
-                        content: apiArticle.content || defaultArticle?.content,
+                        image: apiArticle.image || defaultArticle?.image || Home,
+                        content: normalizedContent,
                     };
                 });
                 
@@ -73,8 +81,11 @@ function ArticlePage() {
                 <div className="mt-1 border-t border-zinc-300/50 pt-6 max-w-3xl mx-auto">
                     <div className="flex aspect-[4/3] items-center justify-center rounded-[1.25rem] border-3 border-zinc-300/70 bg-white mb-8 shadow-[0_20px_50px_rgba(15,23,42,0.08)] overflow-hidden">
                         <img 
-                            src={article.image}
+                            src={article.image || Home}
                             alt={article.title}
+                            onError={(event) => {
+                                event.currentTarget.src = Home;
+                            }}
                             className="w-full h-full object-cover"
                         />
                     </div>

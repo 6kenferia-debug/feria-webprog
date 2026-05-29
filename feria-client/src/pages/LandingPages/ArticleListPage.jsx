@@ -3,6 +3,7 @@ import Button from '../../components/Button.jsx';
 import ArticleList from '../../components/ArticleList.jsx'; 
 import { useEffect, useState } from 'react';
 import { getArticles } from '../../services/ArticleService';
+import defaultArticles from '../../data/article-content';
 
 const ArticleListPage = () => {
     const [articles, setArticles] = useState([]);
@@ -11,7 +12,27 @@ const ArticleListPage = () => {
         (async () => {
             try {
                 const res = await getArticles();
-                setArticles(res?.articles ?? []);
+                const apiArticles = res?.articles ?? [];
+
+                const normalizedArticles = apiArticles.map((article) => {
+                    const defaultArticle = defaultArticles.find((item) => item.slug === article.slug);
+
+                    return {
+                        ...article,
+                        image: typeof article.image === 'string' && article.image.trim()
+                            ? article.image
+                            : defaultArticle?.image || Article,
+                        content: Array.isArray(article.content)
+                            ? article.content
+                            : typeof article.content === 'string'
+                                ? article.content.split(/\n\n|\n/).map((line) => line.trim()).filter(Boolean)
+                                : defaultArticle?.content ?? [],
+                        isFeatured: Boolean(article.isFeatured),
+                        isActive: Boolean(article.isActive),
+                    };
+                });
+
+                setArticles(normalizedArticles);
             } catch (e) {
                 console.error(e);
                 setArticles([]);
@@ -19,7 +40,7 @@ const ArticleListPage = () => {
         })();
     }, []);
 
-    const visibleArticles = articles.filter((article) => article.isActive);
+    const visibleArticles = articles.filter((article) => article.isActive && article.isFeatured);
 
 
     return (
@@ -55,7 +76,14 @@ const ArticleListPage = () => {
                     <h2 className="mt-2 text-2xl font-semibold text-teal-900">Something About Me</h2>
                 </div>
                 
-                <ArticleList articles={visibleArticles} />
+                {visibleArticles.length ? (
+                    <ArticleList articles={visibleArticles} />
+                ) : (
+                    <div className="rounded-3xl border border-dashed border-zinc-300 bg-white px-6 py-8 text-center shadow-[0_20px_50px_rgba(15,23,42,0.08)]">
+                        <p className="text-base font-semibold text-teal-900">No featured articles are available right now.</p>
+                        <p className="mt-2 text-sm text-zinc-600">Enable Featured and Active on an article in the dashboard to show it here.</p>
+                    </div>
+                )}
             </section>
         </div>
     );
