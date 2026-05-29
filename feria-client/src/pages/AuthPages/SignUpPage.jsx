@@ -1,6 +1,6 @@
 //SIGN IN PAGE
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom'; 
+import { Link } from 'react-router-dom'; 
 import Button from '../../components/Button';
 import EmailLogo from '../../assets/images/email_logo.png';
 import PasswordLogo from '../../assets/images/password_logo.png';
@@ -26,19 +26,34 @@ const SignUpPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const navigate = useNavigate();
+  const [successMessage, setSuccessMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setSuccessMessage('');
+    setIsSubmitting(true);
 
     try {
-      // type defaults to editor so editors can access dashboard
-      await createUser({ firstName, lastName, email: email.toLowerCase(), password, type: 'editor' });
-      // After signup, go to login
-      navigate('/auth/login');
+      const response = await createUser({
+        firstName,
+        lastName,
+        email: email.toLowerCase(),
+        password,
+        type: 'editor'
+      });
+
+      const message = response?.data?.message || 'Account created successfully.';
+      setSuccessMessage(message);
+      setFirstName('');
+      setLastName('');
+      setEmail('');
+      setPassword('');
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Sign up failed');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -131,12 +146,31 @@ const SignUpPage = () => {
           </p>
         </div>
 
+        {error && (
+          <div
+            role="alert"
+            className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700"
+          >
+            {error}
+          </div>
+        )}
+
+        {successMessage && (
+          <div
+            role="status"
+            className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
+          >
+            {successMessage}
+          </div>
+        )}
+
         <Button
           type="submit"
           variant="primary"
-          className={`${actionButtonClassName} !border-0 !text-white bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 shadow-md hover:shadow-lg transition`}
+          disabled={isSubmitting}
+          className={`${actionButtonClassName} !border-0 !text-white bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 shadow-md hover:shadow-lg transition disabled:cursor-not-allowed disabled:opacity-70`}
         >
-          Create Account
+          {isSubmitting ? 'Creating Account...' : 'Create Account'}
         </Button>
 
         <div className="grid gap-3 pt-2 sm:grid-cols-2">

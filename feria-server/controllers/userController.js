@@ -14,19 +14,43 @@ const getUsers = async (req, res) => {
 
 const createUser = async (req, res) => {
     try {
-        // Ensure the password is included in the request body
         if (!req.body.password) {
             return res.status(400).json({ message: 'Password is required' });
         }
 
-        // Hash the password
+        const normalizedEmail = String(req.body.email || '').trim().toLowerCase();
+        if (!normalizedEmail) {
+            return res.status(400).json({ message: 'Email is required' });
+        }
+
         const hashedPassword = await bcrypt.hash(req.body.password, 10);
+        const username = String(req.body.username || normalizedEmail.split('@')[0]).trim();
 
-        // Create the user with the hashed password
-        const user = await User.create({ ...req.body, password: hashedPassword });
+        const user = await User.create({
+            ...req.body,
+            email: normalizedEmail,
+            username,
+            password: hashedPassword,
+            age: req.body.age ?? '',
+            gender: req.body.gender ?? '',
+            contactNumber: req.body.contactNumber ?? '',
+            address: req.body.address ?? '',
+            isActive: req.body.isActive ?? true,
+        });
 
-        res.status(201).json(user);
+        const userResponse = user.toObject();
+        delete userResponse.password;
+
+        res.status(201).json({
+            message: 'Account created successfully.',
+            user: userResponse,
+        });
     } catch (error) {
+        if (error?.code === 11000) {
+            const field = Object.keys(error.keyPattern || {})[0] || 'field';
+            return res.status(409).json({ message: `An account with that ${field} already exists.` });
+        }
+
         res.status(400).json({ message: error.message });
     }
 };
