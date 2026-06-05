@@ -1,5 +1,5 @@
 import Button from '../../components/Button';
-import Home from '../../assets/images/home.jpg';
+import Home from "/src/assets/images/home.jpg";
 import { useEffect, useState } from 'react';
 import { getArticles } from '../../services/ArticleService';
 import defaultArticles from '../../data/article-content';
