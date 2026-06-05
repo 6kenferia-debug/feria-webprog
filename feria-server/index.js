@@ -12,16 +12,14 @@ const app = express();
 // DATABASE
 connectDB();
 
-// MIDDLEWARE
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// CORS (clean + production safe)
 app.use(
   cors({
     origin: [
       "http://localhost:5173",
-      "https://your-frontend.vercel.app" // replace later
+      "https://feria-webprog-client-4rnqsq9ff-6kenferia-debugs-projects.vercel.app"
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
