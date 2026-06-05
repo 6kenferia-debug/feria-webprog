@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import Button from '../../components/Button.jsx';
 import { getArticles } from '../../services/ArticleService';
 import placeholderImage from '../../assets/images/article.png';
+import defaultArticles from '../../data/article-content';
 
 const ArticleListPage = () => {
   const [articles, setArticles] = useState([]);
@@ -13,9 +14,11 @@ const ArticleListPage = () => {
       try {
         const response = await getArticles();
         // The API returns { success: true, count: X, data: articles }
-        setArticles(response.data?.data || []);
+        const fetchedArticles = response.data?.data || [];
+        setArticles(fetchedArticles.length > 0 ? fetchedArticles : defaultArticles);
       } catch (error) {
         console.error("Error fetching articles:", error);
+        setArticles(defaultArticles);
       } finally {
         setIsLoading(false);
       }
@@ -59,7 +62,7 @@ const ArticleListPage = () => {
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
           {articles.map((article) => (
             <Link 
-              key={article._id}
+              key={article._id || article.name}
               to={`/articles/${article.name}`}
               className="group block overflow-hidden rounded-2xl border-2 border-zinc-900 bg-white transition hover:-translate-y-1 hover:shadow-[8px_8px_0px_0px_rgba(24,24,27,1)]"
             >
