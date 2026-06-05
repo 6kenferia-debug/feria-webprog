@@ -123,7 +123,7 @@ const ArticlePage = () => {
                     <h2 className="mt-2 text-2xl font-semibold text-teal-900">More Stories</h2>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-3">
+                <div className="grid gap-8 md:grid-cols-3">
                     {featuredArticles.length ? (
                         featuredArticles.map((item) => {
                             const preview = Array.isArray(item.content)
@@ -131,7 +131,10 @@ const ArticlePage = () => {
                                 : String(item.content || '');
 
                             return (
-                                <article key={item.name} className="flex flex-col rounded-3xl border-3 border-zinc-300/70 bg-white p-4 shadow-[0_20px_50px_rgba(15,23,42,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_26px_60px_rgba(15,23,42,0.12)]">
+                                <article
+                                    key={item.name}
+                                    className="flex flex-col rounded-3xl border-3 border-zinc-300/70 bg-white p-4 shadow-[0_20px_50px_rgba(15,23,42,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_26px_60px_rgba(15,23,42,0.12)]"
+                                >
                                     <div>
                                         <img
                                             src={item.imageUrl || placeholderImage}

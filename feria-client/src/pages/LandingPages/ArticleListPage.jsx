@@ -60,45 +60,34 @@ const ArticleListPage = () => {
       {/* Articles Grid */}
       <section className="mx-auto w-full max-w-7xl px-6 pb-24">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-          {articles.map((article) => (
-            <Link 
-              key={article._id || article.name}
-              to={`/articles/${article.name}`}
-              className="group block overflow-hidden rounded-2xl border-2 border-zinc-900 bg-white transition hover:-translate-y-1 hover:shadow-[8px_8px_0px_0px_rgba(24,24,27,1)]"
-            >
-              {/* Image Container */}
-              <div className="aspect-video w-full border-b-2 border-zinc-900 overflow-hidden bg-zinc-100">
-                {article.imageUrl ? (
-                  <img 
-                    src={article.imageUrl} 
-                    alt={article.title} 
-                    onError={(e) => { e.currentTarget.src = placeholderImage; }}
-                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  />
-                ) : (
-                  <img 
-                    src={placeholderImage} 
-                    alt={article.title} 
-                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  />
-                )}
-              </div>
+          {articles.map((article) => {
+            const preview = Array.isArray(article.content)
+              ? article.content[0] || ''
+              : String(article.content || '');
 
-              {/* Text Content */}
-              <div className="p-6">
-                <h3 className="text-xl font-bold leading-tight text-zinc-900 group-hover:underline">
-                  {article.title}
-                </h3>
-                <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-zinc-600">
-                  {article.content && article.content[0]}
-                </p>
-                <div className="mt-6 flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-teal-600">
-                  Read Article
-                  <span className="transition-transform group-hover:translate-x-1">→</span>
+            return (
+              <article
+                key={article._id || article.name}
+                className="flex flex-col rounded-3xl border-3 border-zinc-300/70 bg-white p-4 shadow-[0_20px_50px_rgba(15,23,42,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_26px_60px_rgba(15,23,42,0.12)]"
+              >
+                <div>
+                  <img
+                    src={article.imageUrl || placeholderImage}
+                    alt={article.title}
+                    onError={(e) => { e.currentTarget.src = placeholderImage; }}
+                    className="flex aspect-4/3 w-full items-center justify-center rounded-[1.25rem] bg-teal-200 object-cover"
+                  />
                 </div>
-              </div>
-            </Link>
-          ))}
+                <h3 className="mt-4 text-lg font-semibold text-black">{article.title}</h3>
+                <p className="mt-3 text-sm leading-6 text-black">
+                  {preview.substring(0, 200)}{preview.length > 200 ? '...' : ''}
+                </p>
+                <Button to={`/articles/${article.name}`} className="mt-auto" variant="primary">
+                  Read Article
+                </Button>
+              </article>
+            );
+          })}
         </div>
         
         {articles.length === 0 && (
