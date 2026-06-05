@@ -2,22 +2,50 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { getArticles } from '../../services/ArticleService';
 import NotFoundPage from '../NotFoundPage.jsx';
+import Button from '../../components/Button';
 import placeholderImage from '../../assets/images/article.png';
+import defaultArticles from '../../data/article-content';
 
 const ArticlePage = () => {
     const { name } = useParams();
     const [article, setArticle] = useState(null);
+    const [allArticles, setAllArticles] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
+        const normalizeArticles = (articles) => {
+            return articles.map((apiArticle) => {
+                const defaultArticle = defaultArticles.find((a) => a.name === apiArticle.name);
+                const normalizedContent = Array.isArray(apiArticle.content)
+                    ? apiArticle.content
+                    : typeof apiArticle.content === 'string'
+                        ? apiArticle.content.split(/\n\n|\n/).map((line) => line.trim()).filter(Boolean)
+                        : defaultArticle?.content ?? [];
+
+                return {
+                    ...apiArticle,
+                    imageUrl: apiArticle.imageUrl || defaultArticle?.imageUrl || placeholderImage,
+                    content: normalizedContent,
+                };
+            });
+        };
+
         const fetchArticleData = async () => {
             try {
                 const response = await getArticles();
                 const articlesList = response.data?.data || [];
-                const foundArticle = articlesList.find(a => a.name === name);
+                const sourceArticles = articlesList.length > 0 ? articlesList : defaultArticles;
+                const normalizedArticles = normalizeArticles(sourceArticles);
+
+                setAllArticles(normalizedArticles);
+                const foundArticle = normalizedArticles.find((a) => a.name === name);
                 setArticle(foundArticle || null);
             } catch (error) {
-                console.error("Error loading article:", error);
+                console.error('Error loading article:', error);
+                const normalizedArticles = normalizeArticles(defaultArticles);
+                setAllArticles(normalizedArticles);
+                const foundArticle = normalizedArticles.find((a) => a.name === name);
+                setArticle(foundArticle || null);
             } finally {
                 setIsLoading(false);
             }
@@ -35,6 +63,10 @@ const ArticlePage = () => {
     }
 
     if (!article) return <NotFoundPage />;
+
+    const featuredArticles = allArticles
+        .filter((item) => item.name !== name)
+        .slice(0, 3);
 
     return (
         <div className="mx-auto max-w-4xl px-6 py-12 lg:py-20">
@@ -82,6 +114,50 @@ const ArticlePage = () => {
                     ))}
                 </div>
             </article>
+
+            <section className="mt-20 bg-zinc-50 px-4 py-6 sm:px-6 sm:py-8 lg:px-8 border border-zinc-200/60">
+                <div className="mb-6">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-teal-600">
+                        Feature Cards
+                    </p>
+                    <h2 className="mt-2 text-2xl font-semibold text-teal-900">More Stories</h2>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-3">
+                    {featuredArticles.length ? (
+                        featuredArticles.map((item) => {
+                            const preview = Array.isArray(item.content)
+                                ? item.content[0] || ''
+                                : String(item.content || '');
+
+                            return (
+                                <article key={item.name} className="flex flex-col rounded-3xl border-3 border-zinc-300/70 bg-white p-4 shadow-[0_20px_50px_rgba(15,23,42,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_26px_60px_rgba(15,23,42,0.12)]">
+                                    <div>
+                                        <img
+                                            src={item.imageUrl || placeholderImage}
+                                            alt={item.title}
+                                            onError={(event) => { event.currentTarget.src = placeholderImage; }}
+                                            className="flex aspect-4/3 w-full items-center justify-center rounded-[1.25rem] bg-teal-200 object-cover"
+                                        />
+                                    </div>
+                                    <h3 className="mt-4 text-lg font-semibold text-black">{item.title}</h3>
+                                    <p className="mt-3 text-sm leading-6 text-black">
+                                        {preview.substring(0, 200)}{preview.length > 200 ? '...' : ''}
+                                    </p>
+                                    <Button to={`/articles/${item.name}`} className="mt-auto" variant="primary">
+                                        Read Article
+                                    </Button>
+                                </article>
+                            );
+                        })
+                    ) : (
+                        <div className="rounded-3xl border-3 border-zinc-300/70 bg-white p-6 shadow-[0_20px_50px_rgba(15,23,42,0.08)]">
+                            <h3 className="text-lg font-semibold text-black">No related stories</h3>
+                            <p className="mt-3 text-sm leading-6 text-black">Check back later for more content in the dashboard.</p>
+                        </div>
+                    )}
+                </div>
+            </section>
 
             {/* Footer Action */}
             <div className="mt-20 border-t border-zinc-200 pt-10 text-center">
