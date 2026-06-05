@@ -84,6 +84,7 @@ const deleteUser = async (req, res) => {
 
 const loginUser = async (req, res) => {
     try {
+        console.log("login route called");
         const { email, password } = req.body;
 
         // Find the user by email
