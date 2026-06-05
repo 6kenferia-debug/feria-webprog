@@ -11,10 +11,10 @@ const HomePage = () => {
         (async () => {
             try {
                 const res = await getArticles();
-                const apiArticles = res?.articles ?? [];
+                const apiArticles = res.data?.data || [];
 
                 const mergedArticles = (apiArticles.length > 0 ? apiArticles : defaultArticles).map(apiArticle => {
-                    const defaultArticle = defaultArticles.find(a => a.slug === apiArticle.slug);
+                    const defaultArticle = defaultArticles.find(a => a.name === apiArticle.name);
 
                     const normalizedContent = Array.isArray(apiArticle.content)
                         ? apiArticle.content
@@ -24,10 +24,8 @@ const HomePage = () => {
 
                     return {
                         ...apiArticle,
-                        image: apiArticle.image || defaultArticle?.image || Home,
+                        imageUrl: apiArticle.imageUrl || defaultArticle?.imageUrl || Home,
                         content: normalizedContent,
-                        isFeatured: apiArticle.isFeatured !== undefined ? Boolean(apiArticle.isFeatured) : Boolean(defaultArticle?.isFeatured),
-                        isActive: apiArticle.isActive !== undefined ? Boolean(apiArticle.isActive) : Boolean(defaultArticle?.isActive),
                     };
                 });
 
@@ -39,7 +37,7 @@ const HomePage = () => {
         })();
     }, []);
 
-    const featuredArticles = articles.filter((article) => Boolean(article.isFeatured) && Boolean(article.isActive));
+    const featuredArticles = articles.slice(0, 3);
 
     return (
         <div className="flex w-full flex-col">
@@ -124,10 +122,10 @@ const HomePage = () => {
                                 : String(article.content || '');
 
                             return (
-                            <article key={article.slug} className="flex flex-col rounded-3xl border-3 border-zinc-300/70 bg-white p-4 shadow-[0_20px_50px_rgba(15,23,42,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_26px_60px_rgba(15,23,42,0.12)]">
+                            <article key={article.name} className="flex flex-col rounded-3xl border-3 border-zinc-300/70 bg-white p-4 shadow-[0_20px_50px_rgba(15,23,42,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_26px_60px_rgba(15,23,42,0.12)]">
                                 <div>
                                     <img
-                                        src={article.image || Home}
+                                        src={article.imageUrl || Home}
                                         alt={article.title}
                                         onError={(event) => {
                                             event.currentTarget.src = Home;
@@ -140,7 +138,7 @@ const HomePage = () => {
                                 <p className="mt-3 text-sm leading-6 text-black">
                                     {preview.substring(0, 200)}{preview.length > 200 ? '...' : ''}
                                 </p>
-                                <Button to={`/articles/${article.slug}`} className="mt-auto" variant="primary">
+                                <Button to={`/articles/${article.name}`} className="mt-auto" variant="primary">
                                     Read Article
                                 </Button>
                             </article>
@@ -148,8 +146,8 @@ const HomePage = () => {
                         })
                     ) : (
                         <div className="rounded-3xl border-3 border-zinc-300/70 bg-white p-6 shadow-[0_20px_50px_rgba(15,23,42,0.08)]">
-                            <h3 className="text-lg font-semibold text-black">No featured articles available</h3>
-                            <p className="mt-3 text-sm leading-6 text-black">Enable featured article status in the dashboard to show articles here.</p>
+                            <h3 className="text-lg font-semibold text-black">No articles available</h3>
+                            <p className="mt-3 text-sm leading-6 text-black">Add articles in the dashboard to show articles here.</p>
                         </div>
                     )}
                 </div>

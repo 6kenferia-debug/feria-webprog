@@ -1,61 +1,25 @@
+import axios from 'axios';
 import constants from '../constants';
 
-const rawBase = import.meta.env.VITE_API_URL ?? constants.HOST;
-const baseWithoutTrailingSlash = String(rawBase || '').replace(/\/+$/, '');
-const HOST = baseWithoutTrailingSlash.endsWith('/api')
-  ? baseWithoutTrailingSlash
-  : `${baseWithoutTrailingSlash}/api`;
+const API = axios.create({
+  baseURL: `${constants.HOST}/articles`,
+});
 
-async function request(path, { method = 'GET', body } = {}) {
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-  const res = await fetch(`${HOST}${normalizedPath}`, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-
-  const text = await res.text();
-  let data = null;
-
-  if (text) {
-    try {
-      data = JSON.parse(text);
-    } catch {
-      data = text;
-    }
+API.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
+  return config;
+});
 
-  if (!res.ok) {
-    const message = typeof data === 'string'
-      ? data.slice(0, 200)
-      : data?.message || data?.error || `Request failed with status ${res.status}`;
-    const err = new Error(message);
-    err.response = { data, status: res.status };
-    throw err;
-  }
+// Fetch articles
+export const getArticles = () => API.get('/');
+export const fetchArticles = getArticles;
+export const fetchArticlesAdmin = () => API.get('/?admin=true');
+export const fetchArticleById = (id) => API.get(`/${id}`);
 
-  return data;
-}
-
-export async function getArticles() {
-  return request('/articles', { method: 'GET' });
-}
-
-export async function upsertArticles(articles) {
-  return request('/articles/seed', { method: 'POST', body: { articles } });
-}
-
-export async function createArticle(article) {
-  return request('/articles', { method: 'POST', body: article });
-}
-
-export async function updateArticle(id, article) {
-  return request(`/articles/${id}`, { method: 'PUT', body: article });
-}
-
-export async function patchArticle(id, patch) {
-  return request(`/articles/${id}`, { method: 'PATCH', body: patch });
-}
-
+// Create, Update, Delete articles
+export const createArticle = (articleData) => API.post('/', articleData);
+export const updateArticle = (id, articleData) => API.put(`/${id}`, articleData);
+export const deleteArticle = (id) => API.delete(`/${id}`);

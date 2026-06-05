@@ -3,12 +3,38 @@ const Article = require('../models/Article');
 
 const getArticles = async (req, res) => {
   try {
-    const articles = await Article.find().sort({ createdAt: -1 });
-    res.status(200).json({ 
-      success: true, 
-      count: articles.length, 
-      data: articles 
-    });
+    const totalCount = await Article.countDocuments();
+
+    if (totalCount === 0) {
+      try {
+        const seedData = require('../seeds/articlesSeed');
+        const formatted = seedData.map(a => ({
+          name: a.name || a.slug,
+          title: a.title,
+          imageUrl: a.imageUrl || a.image || "",
+          content: a.content,
+          isHidden: a.isHidden || false
+        }));
+
+        await Promise.all(
+          formatted.map(article =>
+            Article.findOneAndUpdate(
+              { name: article.name },
+              article,
+              { upsert: true, new: true }
+            )
+          )
+        );
+      } catch (seedErr) {
+        console.error("Failed to auto-seed articles:", seedErr);
+      }
+    }
+
+    const showHidden = req.user && req.query.admin === 'true';
+    const query = showHidden ? {} : { isHidden: { $ne: true } };
+    const articles = await Article.find(query).sort({ createdAt: -1 });
+
+    res.status(200).json({ success: true, count: articles.length, data: articles });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -17,7 +43,7 @@ const getArticles = async (req, res) => {
 
 const createArticle = async (req, res) => {
   try {
-    const { title, name, imageUrl, content } = req.body;
+    const { title, name, imageUrl, content, isHidden } = req.body;
 
     const contentArray = typeof content === 'string' 
       ? content.split('\n').filter(paragraph => paragraph.trim() !== "") 
@@ -26,8 +52,9 @@ const createArticle = async (req, res) => {
     const article = await Article.create({
       title,
       name,
-      imageUrl: imageUrl || "", // If imageUrl is null/undefined, save as empty string
-      content: contentArray
+      imageUrl: imageUrl || "",
+      content: contentArray,
+      isHidden: isHidden === true || isHidden === "true"
     });
 
     res.status(201).json({ success: true, data: article });
@@ -46,6 +73,10 @@ const updateArticle = async (req, res) => {
 
     if (updateData.content && typeof updateData.content === 'string') {
       updateData.content = updateData.content.split('\n').filter(p => p.trim() !== "");
+    }
+
+    if (updateData.isHidden !== undefined) {
+      updateData.isHidden = updateData.isHidden === true || updateData.isHidden === "true";
     }
 
     const article = await Article.findByIdAndUpdate(req.params.id, updateData, {

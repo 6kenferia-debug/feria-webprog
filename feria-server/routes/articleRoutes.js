@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { protect } = require("../middleware/authMiddleware"); // Import middleware
+const { protect, optionalProtect } = require("../middleware/authMiddleware"); // Import middleware
 const {
   getArticles,
   createArticle,
@@ -10,7 +10,7 @@ const {
 
 // Public: Get articles | Protected: Create article
 router.route("/")
-  .get(getArticles) 
+  .get(optionalProtect, getArticles) 
   .post(protect, createArticle); 
 
 // Protected: Update and Delete

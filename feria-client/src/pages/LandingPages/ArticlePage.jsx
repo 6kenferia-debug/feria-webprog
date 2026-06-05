@@ -1,110 +1,98 @@
-import { useParams } from 'react-router-dom';
-import { useEffect, useState } from 'react';
-import Button from '../../components/Button';
-import Home from '../../assets/images/home.jpg';
+import React, { useState, useEffect } from 'react';
+import { useParams, Link } from 'react-router-dom';
 import { getArticles } from '../../services/ArticleService';
-import defaultArticles from '../../data/article-content';
+import NotFoundPage from '../NotFoundPage.jsx';
+import placeholderImage from '../../assets/images/article.png';
 
-
-function ArticlePage() {
+const ArticlePage = () => {
     const { name } = useParams();
     const [article, setArticle] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        (async () => {
+        const fetchArticleData = async () => {
             try {
-                const res = await getArticles();
-                const list = res?.articles ?? [];
-                
-                // Merge with default articles to ensure images are available
-                const mergedArticles = list.map(apiArticle => {
-                    const defaultArticle = defaultArticles.find(a => a.slug === apiArticle.slug);
-
-                    const normalizedContent = Array.isArray(apiArticle.content)
-                        ? apiArticle.content
-                        : typeof apiArticle.content === 'string'
-                            ? apiArticle.content.split(/\n\n|\n/).map((line) => line.trim()).filter(Boolean)
-                            : defaultArticle?.content ?? [];
-
-                    return {
-                        ...apiArticle,
-                        image: apiArticle.image || defaultArticle?.image || Home,
-                        content: normalizedContent,
-                    };
-                });
-                
-                const found = (mergedArticles.length > 0 ? mergedArticles : defaultArticles).find((a) => a.slug === name);
-                setArticle(found ?? null);
-            } catch (e) {
-                console.error(e);
-                // Fallback to default articles if API fails
-                const found = defaultArticles.find((a) => a.slug === name);
-                setArticle(found ?? null);
+                const response = await getArticles();
+                const articlesList = response.data?.data || [];
+                const foundArticle = articlesList.find(a => a.name === name);
+                setArticle(foundArticle || null);
+            } catch (error) {
+                console.error("Error loading article:", error);
+            } finally {
+                setIsLoading(false);
             }
-        })();
+        };
+
+        fetchArticleData();
     }, [name]);
 
-    if (!article) {
-
+    if (isLoading) {
         return (
-            <div className="flex w-full flex-col">
-                <section className="bg-zinc-50 px-4 py-6 sm:px-6 sm:py-8 lg:px-8 border border-zinc-200/60">
-                    <div className="mx-auto max-w-3xl text-center">
-                        <h1 className="text-3xl font-bold text-teal-900">Article not found</h1> 
-                        <Button to="/articles" className="mt-6">Back to Articles</Button> 
-                    </div>
-                </section>
+            <div className="flex h-screen items-center justify-center">
+                <p className="text-zinc-500 animate-pulse font-bold tracking-widest">LOADING CONTENT...</p>
             </div>
         );
     }
 
+    if (!article) return <NotFoundPage />;
+
     return (
-        <div className="flex w-full flex-col">
-            <section className="bg-zinc-50 px-4 py-6 sm:px-6 sm:py-8 lg:px-8 border border-zinc-200/60">
-                <div className="max-w-3xl mx-auto text-center">
-                    <div className="mb-1">
-                        <Button to="/articles">Back to Articles</Button> 
-                    </div>
-                    <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.28em] text-teal-600">
-                        Article
-                    </p>
-                    <h1 className="text-3xl font-bold leading-tight text-teal-900 sm:text-4xl"> 
-                        {article.title}
-                    </h1>
-                    <p className="mt-2 text-sm text-zinc-500">
-                        {article.title}
-                    </p>
+        <div className="mx-auto max-w-4xl px-6 py-12 lg:py-20">
+            <div className="mb-12 flex items-center justify-between border-b border-zinc-200 pb-6">
+                <Link 
+                    to="/articles" 
+                    className="group flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-teal-600 transition hover:text-teal-900"
+                >
+                    <span className="transition-transform group-hover:-translate-x-1">←</span>
+                    Back to Articles
+                </Link>
+                <span className="text-[11px] font-bold uppercase tracking-widest text-zinc-400">
+                    {Math.ceil(article.content.join('').length / 1000)} min read
+                </span>
+            </div>
+
+            <div className="mb-12 overflow-hidden rounded-3xl border-2 border-zinc-900 shadow-[12px_12px_0px_0px_rgba(24,24,27,1)]">
+                {article.imageUrl ? (
+                    <img 
+                        src={article.imageUrl} 
+                        alt={article.title} 
+                        onError={(e) => { e.currentTarget.src = placeholderImage; }}
+                        className="aspect-video w-full object-cover"
+                    />
+                ) : (
+                    <img 
+                        src={placeholderImage} 
+                        alt={article.title} 
+                        className="aspect-video w-full object-cover"
+                    />
+                )}
+            </div>
+
+            {/* Article Content */}
+            <article>
+                <h1 className="text-4xl font-black tracking-tighter text-zinc-900 md:text-6xl text-balance mb-8">
+                    {article.title}
+                </h1>
+
+                <div className="prose prose-zinc max-w-none">
+                    {article.content && article.content.map((paragraph, i) => (
+                        <p key={i} className="mb-6 text-lg leading-relaxed text-zinc-600">
+                            {paragraph}
+                        </p>
+                    ))}
                 </div>
-            </section>
-            
-            <section className="bg-zinc-50 px-4 py-6 sm:px-6 sm:py-8 lg:px-8 border border-zinc-200/60">
-                <div className="mt-1 border-t border-zinc-300/50 pt-6 max-w-3xl mx-auto">
-                    <div className="flex aspect-[4/3] items-center justify-center rounded-[1.25rem] border-3 border-zinc-300/70 bg-white mb-8 shadow-[0_20px_50px_rgba(15,23,42,0.08)] overflow-hidden">
-                        <img 
-                            src={article.image || Home}
-                            alt={article.title}
-                            onError={(event) => {
-                                event.currentTarget.src = Home;
-                            }}
-                            className="w-full h-full object-cover"
-                        />
-                    </div>
-                    
-                    <div className="prose prose-sm max-w-none space-y-4 text-black"> 
-                        {article.content.map((paragraph, index) => (
-                            <p key={index} className="text-base leading-7 text-black whitespace-pre-wrap text-justify indent-8">
-                                {paragraph}
-                            </p>
-                        ))} 
-                    </div>
-                    
-                    <div className="mt-8 border-t border-zinc-300/50 pt-6 text-center">
-                        <Button to="/articles">Back to Articles</Button>
-                    </div>
-                </div>
-            </section>
+            </article>
+
+            {/* Footer Action */}
+            <div className="mt-20 border-t border-zinc-200 pt-10 text-center">
+                <h3 className="text-xl font-bold text-zinc-900">Want more updates?</h3>
+                <p className="mt-2 text-zinc-500">Subscribe to my newsletter for future academic and IT insights.</p>
+                <button className="mt-6 rounded-full bg-teal-600 px-8 py-3 text-sm font-bold text-white transition hover:bg-teal-700">
+                    Subscribe
+                </button>
+            </div>
         </div>
     );
-}
+};
 
 export default ArticlePage;

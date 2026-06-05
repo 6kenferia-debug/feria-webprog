@@ -1,91 +1,111 @@
-import Article from '../../assets/images/article.png';
+import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import Button from '../../components/Button.jsx';
-import ArticleList from '../../components/ArticleList.jsx'; 
-import { useEffect, useState } from 'react';
 import { getArticles } from '../../services/ArticleService';
-import defaultArticles from '../../data/article-content';
+import placeholderImage from '../../assets/images/article.png';
 
 const ArticleListPage = () => {
-    const [articles, setArticles] = useState([]);
+  const [articles, setArticles] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-    useEffect(() => {
-        (async () => {
-            try {
-                const res = await getArticles();
-                const apiArticles = res?.articles ?? [];
+  useEffect(() => {
+    const fetchArticles = async () => {
+      try {
+        const response = await getArticles();
+        // The API returns { success: true, count: X, data: articles }
+        setArticles(response.data?.data || []);
+      } catch (error) {
+        console.error("Error fetching articles:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-                const normalizedArticles = apiArticles.map((article) => {
-                    const defaultArticle = defaultArticles.find((item) => item.slug === article.slug);
+    fetchArticles();
+  }, []);
 
-                    return {
-                        ...article,
-                        image: typeof article.image === 'string' && article.image.trim()
-                            ? article.image
-                            : defaultArticle?.image || Article,
-                        content: Array.isArray(article.content)
-                            ? article.content
-                            : typeof article.content === 'string'
-                                ? article.content.split(/\n\n|\n/).map((line) => line.trim()).filter(Boolean)
-                                : defaultArticle?.content ?? [],
-                        isFeatured: Boolean(article.isFeatured),
-                        isActive: Boolean(article.isActive),
-                    };
-                });
-
-                setArticles(normalizedArticles);
-            } catch (e) {
-                console.error(e);
-                setArticles([]);
-            }
-        })();
-    }, []);
-
-    const visibleArticles = articles.filter((article) => article.isActive && article.isFeatured);
-
-
+  if (isLoading) {
     return (
-        <div className="flex w-full flex-col">
-            <section className="bg-zinc-50 px-4 py-6 sm:px-6 sm:py-8 lg:px-8 border border-zinc-200/60">
-
-                <div className="grid gap-8 lg:grid-cols-2 lg:items-center">
-                    <div>
-                        <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.28em] text-teal-600">
-                            Articles
-                        </p>
-                        <h1 className="max-w-xl text-3xl font-bold leading-tight text-teal-900 sm:text-4xl">
-                            Featured Articles Regarding about Me
-                        </h1>
-                        <p className="mt-4 max-w-lg text-sm leading-7 text-zinc-600 sm:text-base">
-                            Articles regarding about my academic journey, personal growth, achievements, and experiences that have shaped who I am today. These featured articles highlight my educational milestones, challenges I have overcome, skills I have developed, and the meaningful moments that contributed to my learning and development. Through these writings, readers can gain insight into my background, aspirations, and the values that guide my academic and personal pursuits.
-                        </p>
-                        <div className="mt-6">
-                            <Button to="/" variant="primary">
-                                Back Home
-                            </Button>
-                        </div>
-                    </div>
-                    <img src={Article} className="rounded-3xl border-2 border-dashed border-zinc-300 bg-zinc-100"/>
-                </div>
-            </section>
-            
-            <section className="bg-zinc-50 px-4 py-6 sm:px-6 sm:py-8 lg:px-8 border border-zinc-200/60">
-                <div className="mb-6">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-teal-600">
-                        Featured Articles
-                    </p>
-                    <h2 className="mt-2 text-2xl font-semibold text-teal-900">Something About Me</h2>
-                </div>
-                
-                {visibleArticles.length ? (
-                    <ArticleList articles={visibleArticles} />
-                ) : (
-                    <div className="rounded-3xl border border-dashed border-zinc-300 bg-white px-6 py-8 text-center shadow-[0_20px_50px_rgba(15,23,42,0.08)]">
-                        <p className="text-base font-semibold text-teal-900">No featured articles are available right now.</p>
-                        <p className="mt-2 text-sm text-zinc-600">Enable Featured and Active on an article in the dashboard to show it here.</p>
-                    </div>
-                )}
-            </section>
-        </div>
+      <div className="flex h-96 items-center justify-center">
+        <p className="text-zinc-500 animate-pulse">Loading Insights...</p>
+      </div>
     );
+  }
+
+  return (
+    <div className="flex w-full flex-col gap-8 bg-zinc-50">
+      {/* Hero Section */}
+      <section className="border-b-2 border-zinc-900 bg-white px-6 py-12 md:px-12 md:py-20">
+        <div className="mx-auto max-w-7xl">
+          <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.3em] text-teal-600">
+            Articles
+          </p>
+          <h1 className="max-w-2xl text-4xl font-black leading-none text-zinc-900 md:text-6xl text-balance">
+            Featured Articles <span className="text-teal-600">Regarding Me.</span>
+          </h1>
+          <p className="mt-6 max-w-2xl text-lg leading-relaxed text-zinc-600">
+            Articles regarding my academic journey, personal growth, achievements, and experiences 
+            that have shaped who I am today. Through these writings, readers can gain insight into 
+            my background, aspirations, and the values that guide my academic and personal pursuits.
+          </p>
+          <div className="mt-10">
+            <Button to="/">Back Home</Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Articles Grid */}
+      <section className="mx-auto w-full max-w-7xl px-6 pb-24">
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+          {articles.map((article) => (
+            <Link 
+              key={article._id}
+              to={`/articles/${article.name}`}
+              className="group block overflow-hidden rounded-2xl border-2 border-zinc-900 bg-white transition hover:-translate-y-1 hover:shadow-[8px_8px_0px_0px_rgba(24,24,27,1)]"
+            >
+              {/* Image Container */}
+              <div className="aspect-video w-full border-b-2 border-zinc-900 overflow-hidden bg-zinc-100">
+                {article.imageUrl ? (
+                  <img 
+                    src={article.imageUrl} 
+                    alt={article.title} 
+                    onError={(e) => { e.currentTarget.src = placeholderImage; }}
+                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  />
+                ) : (
+                  <img 
+                    src={placeholderImage} 
+                    alt={article.title} 
+                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  />
+                )}
+              </div>
+
+              {/* Text Content */}
+              <div className="p-6">
+                <h3 className="text-xl font-bold leading-tight text-zinc-900 group-hover:underline">
+                  {article.title}
+                </h3>
+                <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-zinc-600">
+                  {article.content && article.content[0]}
+                </p>
+                <div className="mt-6 flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-teal-600">
+                  Read Article
+                  <span className="transition-transform group-hover:translate-x-1">→</span>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+        
+        {articles.length === 0 && (
+          <div className="text-center py-20 text-zinc-500">
+            No articles found. Check back soon!
+          </div>
+        )}
+      </section>
+    </div>
+  );
 }
+
 export default ArticleListPage;

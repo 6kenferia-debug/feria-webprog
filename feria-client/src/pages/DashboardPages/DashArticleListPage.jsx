@@ -1,599 +1,321 @@
-import { useEffect, useMemo, useState } from 'react';
+import React, { useState, useEffect } from "react";
 import {
-  Alert,
   Box,
-  Button,
-  Chip,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  FormControlLabel,
-  InputAdornment,
-  MenuItem,
-  Paper,
-  Stack,
-  Switch,
-  TextField,
   Typography,
-  useMediaQuery,
-  Card,
-  CardContent,
-  Grid,
-} from '@mui/material';
-import { useTheme } from '@mui/material/styles';
-import SearchIcon from '@mui/icons-material/Search';
-import { DataGrid } from '@mui/x-data-grid';
-import { getArticles, upsertArticles, patchArticle, createArticle, updateArticle } from '../../services/ArticleService';
-import articlesSeed from '../../data/article-content.js';
+  Button,
+  Modal,
+  TextField,
+  Stack,
+  IconButton,
+  FormControlLabel,
+  Checkbox,
+} from "@mui/material";
+import { DataGrid } from "@mui/x-data-grid";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
+import { fetchArticlesAdmin, createArticle, updateArticle, deleteArticle } from "../../services/ArticleService";
 
-const blankForm = {
+// Convert a title string into a URL-safe slug
+const slugify = (str) =>
+  str
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-');
 
-  slug: '',
-  title: '',
-  image: '',
-  content: '',
-  isFeatured: false,
-  isActive: true,
-};
-
-const seed = {
-  articles: articlesSeed.map((article, index) => ({
-    // local UI needs an id for DataGrid keys; backend uses Mongo _id but exposes articles array
-    id: Number(article.id ?? index + 1),
-    slug: article.slug || article.name || `article-${index + 1}`,
-    title: article.title || `Article ${index + 1}`,
-    image: article.image ?? '',
-    content: Array.isArray(article.content) ? article.content.join('\n\n') : String(article.content || ''),
-    isFeatured: typeof article.isFeatured === 'boolean' ? article.isFeatured : false,
-    isActive: typeof article.isActive === 'boolean' ? article.isActive : true,
-  })),
-  error: '',
+const modalStyle = {
+  position: "absolute",
+  top: "50%",
+  left: "50%",
+  transform: "translate(-50%, -50%)",
+  width: 600,
+  bgcolor: "background.paper",
+  border: "2px solid #000",
+  boxShadow: 24,
+  p: 4,
+  maxHeight: '90vh',
+  overflowY: 'auto'
 };
 
 const DashArticleListPage = () => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-
-  const tealTheme = {
-    primary: '#0d9488',
-    primaryDark: '#0f766e',
-    primaryLight: '#14b8a6',
-    backgroundAlt: '#ccfbf1',
-    textSecondary: '#115e59',
-  };
-
-  const summaryCardStyle = {
-    backgroundColor: '#ffffff',
-    border: '1px solid rgba(15, 23, 42, 0.08)',
-    borderRadius: '1.5rem',
-    boxShadow: '0 20px 50px rgba(15, 23, 42, 0.08)',
-    transition: 'transform 180ms ease, box-shadow 180ms ease',
-    '&:hover': {
-      transform: 'translateY(-3px)',
-      boxShadow: '0 26px 60px rgba(15, 23, 42, 0.12)',
-    },
-  };
-
-  const panelStyle = {
-    backgroundColor: '#ffffff',
-    borderRadius: '1.8rem',
-    boxShadow: '0 24px 60px rgba(15, 23, 42, 0.08)',
-    mb: 4,
-  };
-
   const [articles, setArticles] = useState([]);
-  const [modal, setModal] = useState({ open: false, id: null });
-  const [form, setForm] = useState(blankForm);
-  const [errors, setErrors] = useState({});
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [open, setOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editArticleId, setEditArticleId] = useState(null);
+  const [nameManuallyEdited, setNameManuallyEdited] = useState(false);
+  const [formError, setFormError] = useState('');
+  
+  const [newArticle, setNewArticle] = useState({
+    name: "",
+    title: "",
+    imageUrl: "",
+    content: "",
+    isHidden: false,
+  });
 
-  // Load from backend; if empty, seed it.
+  const loadArticles = async () => {
+    setLoading(true);
+    try {
+      const response = await fetchArticlesAdmin();
+      const fetchedData = response.data?.data || [];
+      setArticles(fetchedData);
+    } catch (error) {
+      console.error("Error fetching articles:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-
-    (async () => {
-      try {
-        const res = await getArticles();
-        const list = res?.articles ?? [];
-        if (list.length === 0) {
-          // seed backend once (id is not stored in backend; we add temporary ids for UI)
-          await upsertArticles(seed.articles.map((a) => ({ ...a, id: undefined })));
-          const seeded = await getArticles();
-          setArticles((seeded?.articles ?? []).map((a, idx) => ({ ...a, id: idx + 1 })));
-        } else {
-          setArticles(list.map((a, idx) => ({ ...a, id: idx + 1 })));
-        }
-      } catch (e) {
-        console.error(e);
-        setArticles(seed.articles);
-      }
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    loadArticles();
   }, []);
 
-  const filteredRows = useMemo(() => {
-    return articles.filter((row) => {
-      const matchesSearch = [row.slug, row.title].some((field) =>
-        String(field ?? '').toLowerCase().includes(searchTerm.toLowerCase())
-      );
+  const handleOpen = () => {
+    setNewArticle({ name: "", title: "", imageUrl: "", content: "", isHidden: false });
+    setIsEditing(false);
+    setNameManuallyEdited(false);
+    setFormError('');
+    setOpen(true);
+  };
 
-      const matchesStatus = statusFilter
-        ? statusFilter === 'active'
-          ? row.isActive === true
-          : row.isActive === false
-        : true;
+  const handleClose = () => {
+    setOpen(false);
+    setIsEditing(false);
+    setEditArticleId(null);
+    setNameManuallyEdited(false);
+    setFormError('');
+  };
 
-      return matchesSearch && matchesStatus;
+  const handleEdit = (article) => {
+    const contentString = Array.isArray(article.content) 
+      ? article.content.join('\n\n') 
+      : article.content;
+
+    setNewArticle({ 
+      name: article.name, 
+      title: article.title, 
+      imageUrl: article.imageUrl, 
+      content: contentString,
+      isHidden: article.isHidden || false
     });
-  }, [articles, searchTerm, statusFilter]);
-
-  const resetForm = () => {
-    setForm({ ...blankForm });
-    setErrors({});
+    setEditArticleId(article._id);
+    setIsEditing(true);
+    setNameManuallyEdited(true); // Preserve existing name on edit
+    setFormError('');
+    setOpen(true);
   };
 
-  const openModal = (article) => {
-    setModal({ open: true, id: article?.id ?? null });
-    setForm(article ? { ...blankForm, ...article } : { ...blankForm });
-    setErrors({});
-  };
-
-  const closeModal = () => {
-    setModal({ open: false, id: null });
-    resetForm();
-  };
-
-  const handleChange = ({ target: { name, value, checked, type } }) => {
-    setForm((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: '' }));
+  const handleDelete = async (id) => {
+    if (window.confirm("Are you sure you want to delete this article?")) {
+      try {
+        await deleteArticle(id);
+        loadArticles();
+      } catch (error) {
+        console.error("Error deleting article:", error);
+      }
     }
   };
 
-  const validate = () => {
-    const nextErrors = {};
-    const slug = String(form.slug ?? '').trim();
-    const title = String(form.title ?? '').trim();
-    const content = String(form.content ?? '').trim();
-    const slugPattern = /^[a-z0-9-]+$/;
+  const handleSaveArticle = async () => {
+    setFormError('');
 
-    if (!slug) nextErrors.slug = 'Article link subdirectory is required.';
-    else if (!slugPattern.test(slug)) nextErrors.slug = 'Use lowercase letters, numbers, and hyphen only.';
-    else if (articles.some((article) => article.id !== modal.id && article.slug === slug)) {
-      nextErrors.slug = 'This article link already exists.';
-    }
-
-    if (!title) nextErrors.title = 'Article title is required.';
-    if (!content) nextErrors.content = 'Article content is required.';
-
-    return nextErrors;
-  };
-
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    const nextErrors = validate();
-    if (Object.keys(nextErrors).length) {
-      setErrors(nextErrors);
+    // Client-side duplicate check
+    const isDuplicate = articles.some(
+      (a) => a.name === newArticle.name && a._id !== editArticleId
+    );
+    if (isDuplicate) {
+      setFormError(`The URL name "${newArticle.name}" is already used by another article. Please choose a different one.`);
       return;
     }
 
-    const payload = {
-      slug: form.slug.trim(),
-      title: form.title.trim(),
-      content: String(form.content).trim(),
-      isFeatured: !!form.isFeatured,
-      isActive: !!form.isActive,
-      image: String(form.image || '').trim(),
-    };
-
     try {
-      if (modal.id != null) {
-        const target = articles.find((a) => a.id === modal.id);
-        // backend identifies by _id, but UI has only temp id.
-        // we stored backend _id in `article._id`.
-        const backendId = target?._id;
-        if (backendId) {
-          await updateArticle(backendId, payload);
-        } else {
-          // fallback
-          await upsertArticles([{ ...payload }]);
-        }
+      const payload = {
+        name: newArticle.name,
+        title: newArticle.title,
+        imageUrl: newArticle.imageUrl,
+        content: newArticle.content,
+        isHidden: newArticle.isHidden
+      };
+
+      if (isEditing) {
+        await updateArticle(editArticleId, payload);
       } else {
         await createArticle(payload);
       }
-
-      const res = await getArticles();
-      const list = res?.articles ?? [];
-      setArticles(list.map((a, idx) => ({ ...a, id: idx + 1 })));
-    } catch (e) {
-      console.error(e);
-      // keep local draft visible
-      setArticles((prev) =>
-        prev.map((a) => (a.id === modal.id ? { ...a, ...payload } : a))
-      );
-    }
-
-    closeModal();
-  };
-
-  const toggleStatus = async (id) => {
-    const target = articles.find((a) => a.id === id);
-    if (!target) return;
-
-    const nextIsActive = !target.isActive;
-    setArticles((prev) => prev.map((a) => (a.id === id ? { ...a, isActive: nextIsActive } : a)));
-
-    try {
-      let savedArticle = null;
-
-      if (target._id) {
-        const response = await patchArticle(target._id, { isActive: nextIsActive });
-        savedArticle = response?.article ?? response;
-      } else {
-        await upsertArticles([{ ...target, isActive: nextIsActive }]);
-      }
-
-      if (savedArticle) {
-        setArticles((prev) => prev.map((a) => (a.id === id ? { ...a, ...savedArticle, id: a.id } : a)));
-      } else {
-        const res = await getArticles();
-        const list = res?.articles ?? [];
-        setArticles(list.map((a, idx) => ({ ...a, id: idx + 1 })));
-      }
-    } catch (e) {
-      console.error(e);
-      setArticles((prev) => prev.map((a) => (a.id === id ? { ...a, isActive: !nextIsActive } : a)));
+      await loadArticles();
+      handleClose();
+    } catch (error) {
+      console.error("Error saving article:", error);
+      const errorMsg = error.response?.data?.message || "Check if URL Name is unique and all fields are filled.";
+      alert("Failed to save article: " + errorMsg);
     }
   };
 
   const columns = [
-    { field: 'id', headerName: 'ID', width: 90 },
-    { field: 'slug', headerName: 'Link Subdirectory', flex: 1, minWidth: 180 },
-    { field: 'title', headerName: 'Article Title', flex: 1.5, minWidth: 220 },
-    {
-      field: 'featured',
-      headerName: 'Featured',
-      minWidth: 130,
-      sortable: false,
-      renderCell: ({ row }) => (
-        <Chip
-          size="small"
-          label={row.isFeatured ? 'Yes' : 'No'}
-          color={row.isFeatured ? 'success' : 'default'}
-          variant={row.isFeatured ? 'filled' : 'outlined'}
-        />
-      ),
+    { field: "title", headerName: "Title", flex: 1.5 },
+    { field: "name", headerName: "URL Name", flex: 1 },
+    { 
+      field: "content", 
+      headerName: "Paragraphs", 
+      flex: 0.5, 
+      valueGetter: (value, row) => (row?.content ? row.content.length : 0)
     },
     {
-      field: 'status',
-      headerName: 'Status',
-      minWidth: 130,
-      sortable: false,
-      renderCell: ({ row }) => (
-        <Chip
-          size="small"
-          label={row.isActive ? 'Active' : 'Inactive'}
-          color={row.isActive ? 'success' : 'default'}
-          variant={row.isActive ? 'filled' : 'outlined'}
-        />
-      ),
-    },
-    {
-      field: 'actions',
-      headerName: 'Actions',
-      minWidth: 220,
-      sortable: false,
-      filterable: false,
-      renderCell: ({ row }) => (
-        <Stack direction="row" spacing={1} sx={{ py: 0.5 }}>
-          <Button size="small" variant="outlined" onClick={() => openModal(row)}>
-            Edit
-          </Button>
-          <Button
-            size="small"
-            variant="contained"
-            color={row.isActive ? 'warning' : 'success'}
-            onClick={() => toggleStatus(row.id)}
+      field: "isHidden",
+      headerName: "Status",
+      flex: 0.8,
+      renderCell: (params) => {
+        const isHidden = params.value;
+        return (
+          <Box
+            sx={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              px: 1.5,
+              py: 0.5,
+              borderRadius: 1,
+              fontSize: '0.75rem',
+              fontWeight: 'bold',
+              bgcolor: isHidden ? '#ffebee' : '#e8f5e9',
+              color: isHidden ? '#c62828' : '#2e7d32',
+              border: `1px solid ${isHidden ? '#ffcdd2' : '#c8e6c9'}`,
+            }}
           >
-            {row.isActive ? 'Hide' : 'Show'}
-          </Button>
+            {isHidden ? "Hidden" : "Visible"}
+          </Box>
+        );
+      }
+    },
+    {
+      field: "actions",
+      headerName: "Actions",
+      flex: 1,
+      sortable: false,
+      renderCell: (params) => (
+        <Stack 
+            direction="row" 
+            spacing={1} 
+            sx={{ height: '100%', alignItems: "center" }}
+        >
+          <IconButton onClick={() => handleEdit(params.row)} color="primary" size="small">
+            <EditIcon />
+          </IconButton>
+          <IconButton onClick={() => handleDelete(params.row._id)} color="error" size="small">
+            <DeleteIcon />
+          </IconButton>
         </Stack>
       ),
     },
   ];
 
-  const fieldProps = (name, label, extra = {}) => ({
-    name,
-    label,
-    value: form[name],
-    onChange: handleChange,
-    error: Boolean(errors[name]),
-    helperText: errors[name],
-    fullWidth: true,
-    ...extra,
-  });
-
   return (
-    <Box
-      sx={{
-        minHeight: '100vh',
-        px: 0,
-        py: { xs: 2, md: 2 },
-        backgroundColor: '#eef4f7',
-      }}
-    >
-      <Box sx={{ maxWidth: '100%', mx: 'auto' }}>
-        <Typography
-          variant="h4"
-          sx={{
-            color: tealTheme.primaryDark,
-            fontWeight: 900,
-            mb: 3,
-            letterSpacing: '0.02em',
-            display: 'inline-flex',
-            alignItems: 'center',
+    <Box>
+      <Stack 
+        direction="row" 
+        sx={{ justifyContent: "space-between", alignItems: "center", mb: 3 }}
+      >
+        <Typography variant="h4" fontWeight="bold">Manage Articles</Typography>
+        <Button variant="contained" color="primary" onClick={handleOpen}>
+          Add Article
+        </Button>
+      </Stack>
+
+      <Box sx={{ height: 500, width: "100%", bgcolor: 'background.paper', borderRadius: 1, boxShadow: 1 }}>
+        <DataGrid
+          rows={articles}
+          columns={columns}
+          getRowId={(row) => row._id || `temp-${Math.random()}`}
+          loading={loading}
+          initialState={{
+            pagination: { paginationModel: { pageSize: 10 } },
           }}
-        >
-          Article Management
-        </Typography>
+          pageSizeOptions={[10, 25]}
+          disableRowSelectionOnClick
+        />
+      </Box>
 
-        <Grid container spacing={3} sx={{ mb: 4, justifyContent: 'center' }}>
-          <Grid item xs={6} sm={3}>
-            <Card sx={{ ...summaryCardStyle, minWidth: 180, maxWidth: 180 }}>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="subtitle2" sx={{ color: tealTheme.textSecondary, fontWeight: 700, mb: 1 }}>
-                  Total Articles
-                </Typography>
-                <Typography variant="h3" sx={{ color: tealTheme.primaryDark, fontWeight: 800 }}>
-                  {articles.length}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={6} sm={3}>
-            <Card sx={{ ...summaryCardStyle, minWidth: 180, maxWidth: 180 }}>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="subtitle2" sx={{ color: tealTheme.textSecondary, fontWeight: 700, mb: 1 }}>
-                  Featured Articles
-                </Typography>
-                <Typography variant="h3" sx={{ color: tealTheme.primaryDark, fontWeight: 800 }}>
-                  {articles.filter((row) => row.isFeatured).length}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={6} sm={3}>
-            <Card sx={{ ...summaryCardStyle, minWidth: 180, maxWidth: 180 }}>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="subtitle2" sx={{ color: tealTheme.textSecondary, fontWeight: 700, mb: 1 }}>
-                  Active Articles
-                </Typography>
-                <Typography variant="h3" sx={{ color: tealTheme.primaryDark, fontWeight: 800 }}>
-                  {articles.filter((row) => row.isActive).length}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={6} sm={3}>
-            <Card sx={{ ...summaryCardStyle, minWidth: 180, maxWidth: 180 }}>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <Typography variant="subtitle2" sx={{ color: tealTheme.textSecondary, fontWeight: 700, mb: 1 }}>
-                  Inactive Articles
-                </Typography>
-                <Typography variant="h3" sx={{ color: tealTheme.primaryDark, fontWeight: 800 }}>
-                  {articles.filter((row) => !row.isActive).length}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-
-        <Box sx={{ ...panelStyle, p: 3 }}>
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              gap: 2,
-              flexWrap: 'wrap',
-              mb: 2,
-            }}
-          >
-            <Typography variant="h5" sx={{ color: tealTheme.primaryDark, fontWeight: 800 }}>
-              Article Directory
-            </Typography>
-            <Button
-              variant="contained"
-              onClick={() => openModal()}
-              sx={{
-                backgroundColor: tealTheme.primary,
-                '&:hover': { backgroundColor: tealTheme.primaryDark },
-                textTransform: 'none',
-                fontWeight: 700,
-                borderRadius: '1rem',
-                px: 2.5,
-              }}
-            >
-              Add Article
-            </Button>
-          </Box>
-
-          <Box sx={{ display: 'flex', gap: 2, alignItems: 'stretch', flexWrap: 'wrap', mb: 2 }}>
+      <Modal open={open} onClose={handleClose}>
+        <Box sx={modalStyle}>
+          <Typography variant="h6" mb={3} fontWeight="bold">
+            {isEditing ? "Edit Article" : "Create New Article"}
+          </Typography>
+          
+          <Stack spacing={2.5}>
+            {formError && (
+              <Box sx={{ p: 1.5, bgcolor: '#fff3f3', border: '1px solid #f44336', borderRadius: 1 }}>
+                <Typography variant="body2" color="error">{formError}</Typography>
+              </Box>
+            )}
             <TextField
+              label="Article Title"
               fullWidth
-              variant="outlined"
-              placeholder="Search by slug or title..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              sx={{
-                flex: '2 1 320px',
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: '1rem',
-                  backgroundColor: 'white',
-                  '& fieldset': {
-                    borderColor: 'rgba(13, 148, 136, 0.2)',
-                  },
-                  '&:hover fieldset': {
-                    borderColor: tealTheme.primary,
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: tealTheme.primary,
-                    borderWidth: '2px',
-                  },
-                },
-              }}
-              slotProps={{
-                input: {
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon sx={{ color: tealTheme.textSecondary }} />
-                    </InputAdornment>
-                  ),
-                },
+              value={newArticle.title}
+              onChange={(e) => {
+                const newTitle = e.target.value;
+                setNewArticle((prev) => ({
+                  ...prev,
+                  title: newTitle,
+                  // Auto-generate name from title unless the user manually edited it
+                  name: nameManuallyEdited ? prev.name : slugify(newTitle),
+                }));
               }}
             />
             <TextField
-              select
-              label="Status"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              sx={{
-                flex: '1 1 160px',
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: '1rem',
-                  backgroundColor: 'white',
-                  '& fieldset': {
-                    borderColor: 'rgba(13, 148, 136, 0.2)',
-                  },
-                  '&:hover fieldset': {
-                    borderColor: tealTheme.primary,
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: tealTheme.primary,
-                    borderWidth: '2px',
-                  },
-                },
+              label="URL Name (auto-generated from title)"
+              placeholder="e.g. my-article-title"
+              fullWidth
+              value={newArticle.name}
+              helperText="This is used as the article's URL. Auto-generated from the title, but you can change it."
+              onChange={(e) => {
+                setNameManuallyEdited(true);
+                setNewArticle({ ...newArticle, name: slugify(e.target.value) });
               }}
-            >
-              <MenuItem value="">All</MenuItem>
-              <MenuItem value="active">Active</MenuItem>
-              <MenuItem value="inactive">Inactive</MenuItem>
-            </TextField>
-          </Box>
+            />
+            <TextField
+              label="Image URL"
+              fullWidth
+              value={newArticle.imageUrl}
+              onChange={(e) => setNewArticle({ ...newArticle, imageUrl: e.target.value })}
+            />
+            <TextField
+              label="Content"
+              helperText="Press Enter to create new paragraphs."
+              fullWidth
+              multiline
+              rows={8}
+              value={newArticle.content}
+              onChange={(e) => setNewArticle({ ...newArticle, content: e.target.value })}
+            />
 
-          <Paper sx={{ p: { xs: 1.5, sm: 2 }, minWidth: 0, overflow: 'hidden' }}>
-            {articles.length ? (
-              <Box sx={{ height: { xs: 500, sm: 560 }, width: '100%', minWidth: 0 }}>
-                <DataGrid
-                  rows={filteredRows}
-                  columns={columns}
-                  disableRowSelectionOnClick
-                  pageSizeOptions={[5, 10]}
-                  initialState={{
-                    pagination: { paginationModel: { pageSize: 5, page: 0 } },
-                  }}
-                  sx={{
-                    minWidth: 0,
-                    '&.MuiDataGrid-cell, & .MuiDataGrid-columnHeader': {
-                      outline: 'none',
-                    },
-                  }}
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={newArticle.isHidden || false}
+                  onChange={(e) => setNewArticle({ ...newArticle, isHidden: e.target.checked })}
+                  color="primary"
                 />
-              </Box>
-            ) : (
-              <Alert severity="info">No articles found. Use Add Article to create a record.</Alert>
-            )}
-          </Paper>
-        </Box>
-
-        <Dialog open={modal.open} onClose={closeModal} fullWidth fullScreen={isMobile} maxWidth="md">
-          <Box component="form" onSubmit={handleSubmit}>
-            <DialogTitle>{modal.id ? 'Edit Article' : 'Add Article'}</DialogTitle>
-            <DialogContent dividers sx={{ px: { xs: 2, sm: 3 } }}>
-              <Stack spacing={2} sx={{ pt: 1 }}>
-                <TextField {...fieldProps('slug', 'Article link subdirectory')} />
-                <TextField {...fieldProps('title', 'Article Title')} />
-                <TextField {...fieldProps('image', 'Image URL')} />
-                <TextField
-                  {...fieldProps('content', 'Content', {
-                    multiline: true,
-                    rows: 6,
-                  })}
-                />
-                <Typography variant="caption" sx={{ color: 'rgba(15, 23, 42, 0.7)', px: 0.5 }}>
-                  Separate paragraphs with a blank line.
-                </Typography>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      name="isFeatured"
-                      checked={!!form.isFeatured}
-                      onChange={handleChange}
-                      sx={{
-                        '& .MuiSwitch-switchBase.Mui-checked': {
-                          color: tealTheme.primary,
-                        },
-                        '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                          backgroundColor: tealTheme.primary,
-                        },
-                        '& .MuiSwitch-track': {
-                          backgroundColor: 'rgba(13, 148, 136, 0.35)',
-                        },
-                      }}
-                    />
-                  }
-                  label={form.isFeatured ? 'Featured Article: Yes' : 'Featured Article: No'}
-                />
-                <FormControlLabel
-                  control={
-                    <Switch
-                      name="isActive"
-                      checked={!!form.isActive}
-                      onChange={handleChange}
-                      sx={{
-                        '& .MuiSwitch-switchBase.Mui-checked': {
-                          color: tealTheme.primary,
-                        },
-                        '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                          backgroundColor: tealTheme.primary,
-                        },
-                        '& .MuiSwitch-track': {
-                          backgroundColor: 'rgba(13, 148, 136, 0.35)',
-                        },
-                      }}
-                    />
-                  }
-                  label={form.isActive ? 'Article Status: Active' : 'Article Status: Inactive'}
-                />
-              </Stack>
-            </DialogContent>
-            <DialogActions sx={{ px: 3, py: 2 }}>
-              <Button onClick={closeModal}>Cancel</Button>
-              <Button
-                type="submit"
-                variant="contained"
-                sx={{
-                  backgroundColor: tealTheme.primary,
-                  '&:hover': { backgroundColor: tealTheme.primaryDark },
-                  textTransform: 'none',
-                  fontWeight: 700,
-                  borderRadius: '1rem',
-                  px: 2.5,
-                }}
+              }
+              label="Hide this article (do not display on public site)"
+            />
+            
+            <Stack direction="row" spacing={2} sx={{ justifyContent: "flex-end", pt: 2 }}>
+              <Button onClick={handleClose} color="inherit">Cancel</Button>
+              <Button 
+                variant="contained" 
+                size="large" 
+                onClick={handleSaveArticle}
+                disabled={!newArticle.title || !newArticle.name}
               >
-                {modal.id ? 'Update Article' : 'Save Article'}
+                {isEditing ? "Save Changes" : "Publish Article"}
               </Button>
-            </DialogActions>
-          </Box>
-        </Dialog>
-      </Box>
+            </Stack>
+          </Stack>
+        </Box>
+      </Modal>
     </Box>
   );
 };
 
 export default DashArticleListPage;
-
