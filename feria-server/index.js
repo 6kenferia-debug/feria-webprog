@@ -13,20 +13,22 @@ const app = express();
 //DATABASE CONNECTION
 connectDB();
 
-//MIDDLEWARE
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-//CORS CONFIG
+// CORS CONFIG
 const corsOptions = {
-    origin: "*",
+    origin: (origin, callback) => {
+        // Dynamically allow the requesting origin to work with credentials: true
+        callback(null, true);
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
+    optionsSuccessStatus: 200 // For legacy browser support
 };
 
+// MIDDLEWARE
 app.use(cors(corsOptions));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 //TEST ROUTE (FIX for "Cannot GET /")
 app.get("/", (req, res) => {
