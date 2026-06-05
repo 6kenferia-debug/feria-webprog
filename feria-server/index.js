@@ -9,6 +9,9 @@ const articleRoutes = require("./routes/articleRoutes");
 
 const app = express();
 
+// DATABASE CONNECTION
+connectDB();
+
 // CORS CONFIG
 const corsOptions = {
     origin: (origin, callback) => {
@@ -21,25 +24,10 @@ const corsOptions = {
     optionsSuccessStatus: 200 // For legacy browser support
 };
 
-// GLOBAL MIDDLEWARE
+// MIDDLEWARE
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// 🛡️ CRITICAL SERVERLESS FIX: Force incoming requests to wait for MongoDB
-// This prevents Mongoose from running queries before the cached connection is complete.
-app.use(async (req, res, next) => {
-    try {
-        await connectDB();
-        next();
-    } catch (err) {
-        console.error("Vercel Request Blocked: Database not ready ->", err.message);
-        res.status(500).json({ 
-            message: "Database connection failed", 
-            error: err.message 
-        });
-    }
-});
 
 // TEST ROUTE (FIX for "Cannot GET /")
 app.get("/", (req, res) => {
@@ -61,13 +49,13 @@ app.use("/api/articles", articleRoutes);
 app.use("/articles", articleRoutes);
 
 
-// ERROR HANDLING MIDDLEWARE
+// ERROR HANDLING
 app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(500).json({ message: "Server Error" });
 });
 
-// START SERVER (Only runs when testing locally, bypassed on Vercel)
+// START SERVER (Only runs when testing locally)
 if (process.env.NODE_ENV !== 'production') {
     const PORT = process.env.PORT || 5000;
     app.listen(PORT, () => {
@@ -75,5 +63,5 @@ if (process.env.NODE_ENV !== 'production') {
     });
 }
 
-// CRITICAL FOR VERCEL DEPLOYMENT: Export the express app instance
+// CRITICAL FOR VERCEL DEPLOYMENT
 module.exports = app;
