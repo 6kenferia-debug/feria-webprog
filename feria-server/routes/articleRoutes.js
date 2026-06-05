@@ -1,19 +1,21 @@
-const express = require('express');
+const express = require("express");
+const router = express.Router();
+const { protect } = require("../middleware/authMiddleware"); // Import middleware
 const {
   getArticles,
-  upsertSeed,
   createArticle,
   updateArticle,
-  patchArticle,
-} = require('../controllers/articleController');
+  deleteArticle,
+} = require("../controllers/articleController");
 
-const router = express.Router();
+// Public: Get articles | Protected: Create article
+router.route("/")
+  .get(getArticles) 
+  .post(protect, createArticle); 
 
-router.get('/', getArticles);
-router.post('/seed', upsertSeed);
-router.post('/', createArticle);
-router.put('/:id', updateArticle);
-router.patch('/:id', patchArticle);
+// Protected: Update and Delete
+router.route("/:id")
+  .put(protect, updateArticle)
+  .delete(protect, deleteArticle);
 
 module.exports = router;
-
