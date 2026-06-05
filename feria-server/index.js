@@ -21,8 +21,6 @@ app.use(
   })
 );
 
-app.options("*", cors());
-
 // DATABASE
 connectDB();
 
