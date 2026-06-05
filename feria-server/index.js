@@ -9,12 +9,6 @@ const articleRoutes = require("./routes/articleRoutes");
 
 const app = express();
 
-// DATABASE
-connectDB();
-
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
 app.use(
   cors({
     origin: [
@@ -23,13 +17,25 @@ app.use(
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
+app.options("*", cors());
+
+// DATABASE
+connectDB();
+
+// MIDDLEWARE
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 
 // TEST ROUTE
 app.get("/", (req, res) => {
   res.send("API Running 🚀");
 });
+
 
 // ROUTES
 app.use("/api/users", userRoutes);
@@ -41,7 +47,8 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: "Server Error" });
 });
 
-// START SERVER (RENDER NEEDS THIS)
+
+// START SERVER (RENDER)
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
