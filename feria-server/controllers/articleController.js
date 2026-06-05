@@ -1,153 +1,79 @@
-const Article = require('../models/Articles');
+const Article = require('../models/Article');
 
-// GET /api/articles
+
 const getArticles = async (req, res) => {
   try {
-    const articles = await Article.find({}).sort({ createdAt: -1 });
-    res.json({ articles });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+    const articles = await Article.find().sort({ createdAt: -1 });
+    res.status(200).json({ 
+      success: true, 
+      count: articles.length, 
+      data: articles 
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// POST /api/articles/seed
-// Upserts articles by slug (so dashboard toggles persist)
-const upsertSeed = async (req, res) => {
-  try {
-    const { articles } = req.body || {};
-    if (!Array.isArray(articles)) {
-      return res.status(400).json({ message: 'articles must be an array' });
-    }
 
-    const results = [];
-
-    for (const a of articles) {
-      const slug = String(a.slug ?? '').trim();
-      const title = String(a.title ?? '').trim();
-      if (!slug || !title) continue;
-
-      const payload = {
-        slug,
-        title,
-        image: a.image ?? undefined,
-        content: Array.isArray(a.content)
-          ? a.content
-          : typeof a.content === 'string'
-            ? a.content.split(/\n\n|\n/).map((s) => s.trim()).filter(Boolean)
-            : [],
-        isFeatured: typeof a.isFeatured === 'boolean' ? a.isFeatured : false,
-        isActive: typeof a.isActive === 'boolean' ? a.isActive : true,
-      };
-
-      const doc = await Article.findOneAndUpdate(
-        { slug },
-        { $set: payload },
-        { upsert: true, new: true, runValidators: true }
-      );
-      results.push(doc);
-    }
-
-    res.json({ articles: results });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
-
-// POST /api/articles
 const createArticle = async (req, res) => {
   try {
-    const payload = req.body || {};
-    if (!payload.slug || !payload.title) {
-      return res.status(400).json({ message: 'slug and title are required' });
-    }
+    const { title, name, imageUrl, content } = req.body;
 
-    const doc = await Article.create({
-      slug: String(payload.slug).trim(),
-      title: String(payload.title).trim(),
-      image: payload.image ?? undefined,
-      content: Array.isArray(payload.content)
-        ? payload.content
-        : typeof payload.content === 'string'
-          ? payload.content.split(/\n\n|\n/).map((s) => s.trim()).filter(Boolean)
-          : [],
-      isFeatured: typeof payload.isFeatured === 'boolean' ? payload.isFeatured : false,
-      isActive: typeof payload.isActive === 'boolean' ? payload.isActive : true,
+    const contentArray = typeof content === 'string' 
+      ? content.split('\n').filter(paragraph => paragraph.trim() !== "") 
+      : content;
+
+    const article = await Article.create({
+      title,
+      name,
+      imageUrl: imageUrl || "", // If imageUrl is null/undefined, save as empty string
+      content: contentArray
     });
 
-    res.status(201).json({ article: doc });
-  } catch (err) {
-    res.status(400).json({ message: err.message });
+    res.status(201).json({ success: true, data: article });
+  } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({ success: false, message: "Article 'name' (slug) must be unique." });
+    }
+    res.status(400).json({ success: false, message: error.message });
   }
 };
 
-// PUT /api/articles/:id
+
 const updateArticle = async (req, res) => {
   try {
-    const payload = req.body || {};
-    const doc = await Article.findByIdAndUpdate(
-      req.params.id,
-      {
-        $set: {
-          slug: payload.slug != null ? String(payload.slug).trim() : undefined,
-          title: payload.title != null ? String(payload.title).trim() : undefined,
-          image: payload.image,
-          content:
-            payload.content != null
-              ? Array.isArray(payload.content)
-                ? payload.content
-                : typeof payload.content === 'string'
-                  ? payload.content.split(/\n\n|\n/).map((s) => s.trim()).filter(Boolean)
-                  : []
-              : undefined,
-          isFeatured: typeof payload.isFeatured === 'boolean' ? payload.isFeatured : undefined,
-          isActive: typeof payload.isActive === 'boolean' ? payload.isActive : undefined,
-        },
-      },
-      { new: true, runValidators: true }
-    );
+    const updateData = { ...req.body };
 
-    if (!doc) return res.status(404).json({ message: 'Article not found' });
-    res.json({ article: doc });
-  } catch (err) {
-    res.status(400).json({ message: err.message });
+    if (updateData.content && typeof updateData.content === 'string') {
+      updateData.content = updateData.content.split('\n').filter(p => p.trim() !== "");
+    }
+
+    const article = await Article.findByIdAndUpdate(req.params.id, updateData, {
+      new: true,
+      runValidators: true,
+    });
+
+    if (!article) return res.status(404).json({ success: false, message: 'Article not found' });
+    res.status(200).json({ success: true, data: article });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
   }
 };
 
-// PATCH /api/articles/:id
-const patchArticle = async (req, res) => {
-  try {
-    const payload = req.body || {};
-    const doc = await Article.findByIdAndUpdate(
-      req.params.id,
-      {
-        $set: {
-          ...payload,
-          content:
-            payload.content != null
-              ? Array.isArray(payload.content)
-                ? payload.content
-                : typeof payload.content === 'string'
-                  ? payload.content.split(/\n\n|\n/).map((s) => s.trim()).filter(Boolean)
-                  : []
-              : undefined,
-        },
-      },
-      { new: true, runValidators: true }
-    );
 
-    if (!doc) return res.status(404).json({ message: 'Article not found' });
-    res.json({ article: doc });
-  } catch (err) {
-    res.status(400).json({ message: err.message });
+const deleteArticle = async (req, res) => {
+  try {
+    const article = await Article.findByIdAndDelete(req.params.id);
+    if (!article) return res.status(404).json({ success: false, message: 'Article not found' });
+    res.status(200).json({ success: true, message: 'Article deleted' });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
   }
 };
 
 module.exports = {
   getArticles,
-  upsertSeed: upsertSeed,
   createArticle,
-
   updateArticle,
-  patchArticle,
+  deleteArticle,
 };
-
